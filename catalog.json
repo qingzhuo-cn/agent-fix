@@ -1,7 +1,7 @@
 {
   "name": "agent-fix",
-  "version": "1.1.0",
-  "description": "Universal diagnostic/fix catalog for ALL AI coding agents (Claude Code, Codex, OpenCode, Hermes, Kimi Code, Pi, ZCode, Cursor, ...)",
+  "version": "1.2.0",
+  "description": "Universal diagnostic/fix catalog for ALL AI coding agents (Claude Code, Codex, OpenCode, Hermes, Kimi Code, Pi, ZCode, Cursor, ...) — plus MCP server + branch skills",
   "agents": {
     "claude-code":  { "name": "Claude Code",          "bin": ["claude"],            "config": "~/.claude",             "skills": "~/.claude/skills",        "npm_pkg": "@anthropic-ai/claude-code", "provider_env": ["ANTHROPIC_BASE_URL", "ANTHROPIC_AUTH_TOKEN"], "home": "https://docs.anthropic.com/claude-code" },
     "codex":        { "name": "Codex CLI",             "bin": ["codex"],             "config": "~/.codex",              "skills": "~/.codex/skills",          "npm_pkg": "@openai/codex",            "provider_env": ["OPENAI_BASE_URL", "OPENAI_API_KEY"], "home": "https://github.com/openai/codex" },

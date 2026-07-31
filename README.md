@@ -30,6 +30,7 @@ English / [简体中文](README_cn.md)
   - [Compatibility matrix](#compatibility-matrix)
   - [Issue catalog](#issue-catalog)
   - [Use it from your programs](#use-it-from-your-programs)
+  - [MCP server (12 tools for any agent)](#mcp-server-12-tools-for-any-agent)
 - [How it works](#how-it-works)
 - [Extending the catalog](#extending-the-catalog)
 - [FAQ](#faq)
@@ -63,6 +64,7 @@ command. This skill makes that repair one command: `fix apply npm-postinstall-sk
 - 🤖 **Every agent, registry-driven** — an agent registry in `catalog.json` covers Claude Code, Codex, OpenCode, Hermes, Kimi Code, Pi, ZCode, Cursor, Gemini CLI, Aider, Qwen Code, Amp, Droid + any npm CLI; `fix doctor` checks **every agent installed on your machine**, not just the big four. New agents = one line of data, no code
 - 🖥️ **Cross-platform** — Windows (incl. Git Bash & WSL-aware), macOS, Linux
 - 🧩 **Skill + CLI + API** — loadable as a skill by agents, callable from a terminal, or importable as a Python module
+- ⚡ **MCP server** — a zero-dependency stdio MCP server (`mcp/server.py`, 12 tools) lets Claude Code, OpenCode, Cursor, ZCode, Codex call the whole toolbox (`fix_doctor`, `net_diagnose`, `deepseek_setup`, …) as native tools
 - 📦 **Zero dependencies** — pure Python 3.8+ stdlib
 - 🔁 **Watchdog-ready** — `fix auto` checks and auto-repairs; non-zero exit on failure drops straight into cron/CI
 - 🧪 **Verified fixes** — every fix ends with a real verification step, not just `--version`
@@ -177,6 +179,25 @@ out = subprocess.run(["fix", "check", "--json"], capture_output=True, text=True)
 report = json.loads(out.stdout)
 ```
 
+### MCP server (12 tools for any agent)
+
+The same toolbox is exposed as an MCP server, so **any MCP-capable agent**
+(Claude Code, OpenCode, Cursor, ZCode, Codex) can call it as native tools:
+
+| Group | Tools |
+|-------|-------|
+| Core inspect/fix | `fix_agents`, `fix_doctor`, `fix_check`, `fix_apply`, `fix_info` |
+| Branch skills | `net_diagnose` (endpoint latency + proxy), `version_check`, `config_audit` (parse errors + leaked keys), `log_triage`, `backup_configs`, `restore_configs`, `deepseek_setup` |
+
+```bash
+python scripts/mcp_register.py all        # register with every installed agent
+claude mcp list | grep agent-fix          # verify: ✔ Connected
+```
+
+Then just talk to your agent: *"run fix_doctor and tell me what's broken"*,
+*"net_diagnose — is DeepSeek reachable?"*, *"backup_configs before I upgrade"*,
+*"deepseek_setup with key sk-…"*. Full docs: [mcp/README.md](mcp/README.md).
+
 ## How it works
 
 ```
@@ -185,11 +206,11 @@ report = json.loads(out.stdout)
                 │  checks · fixes · verify    │  (issue definitions)
                 └──────────────┬──────────────┘
                                │
-        ┌──────────────────────┼───────────────────────┐
-        ▼                      ▼                       ▼
-  fixes/*.md            scripts/fix.py           SKILL.md / AGENTS.md
-  human & agent         CLI + Python API         agent-side loaders
-  knowledge base        (stdlib only)            (Hermes/Claude/OpenCode/Codex)
+        ┌──────────────────────┬───────────────────────┬───────────────────┬──────────────┐
+        ▼                      ▼                       ▼                   ▼
+  fixes/*.md            scripts/fix.py           SKILL.md / AGENTS.md    mcp/server.py
+  human & agent         CLI + Python API         agent-side loaders     12 MCP tools for
+  knowledge base        (stdlib only)            (Hermes/Claude/OpenCode) any MCP-capable agent
 ```
 
 Each issue in `catalog.json` is data — `checks` (diagnostics), `fixes` (repair

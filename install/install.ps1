@@ -95,6 +95,14 @@ Install-Skill (Join-Path $HomeD ".agents\skills\$Name")
 Install-AgentsMdHook (Join-Path $HomeD ".codex\AGENTS.md")
 Install-AgentsMdHook (Join-Path $HomeD ".config\opencode\AGENTS.md")
 
+# --- MCP server registration ---
+Write-Host "[agent-fix] registering MCP server with detected agents..." -ForegroundColor Cyan
+try {
+    & python "$Repo\scripts\mcp_register.py" all
+} catch {
+    Write-Host "[agent-fix] MCP registration incomplete (see mcp\README.md)" -ForegroundColor Yellow
+}
+
 # --- CLI ---
 Install-Cli
 

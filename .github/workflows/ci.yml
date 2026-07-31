@@ -21,6 +21,28 @@ jobs:
         run: python scripts/fix.py list
       - name: fix agents (registry smoke)
         run: python scripts/fix.py agents
+      - name: MCP server handshake + tools smoke test
+        run: |
+          python - <<'EOF'
+          import json, subprocess, sys
+          reqs = [
+            {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05"}},
+            {"jsonrpc":"2.0","id":2,"method":"tools/list"},
+            {"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"fix_agents","arguments":{}}},
+            {"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"net_diagnose","arguments":{"timeout":2}}},
+          ]
+          p = subprocess.run([sys.executable, "mcp/server.py"], input="\n".join(json.dumps(r) for r in reqs),
+                             capture_output=True, text=True, timeout=120)
+          assert p.returncode == 0, p.stderr
+          replies = {json.loads(l)["id"]: json.loads(l) for l in p.stdout.splitlines() if l.strip()}
+          assert replies[1]["result"]["serverInfo"]["name"] == "agent-fix"
+          names = [t["name"] for t in replies[2]["result"]["tools"]]
+          assert len(names) == 12, names
+          assert "fix_doctor" in names and "net_diagnose" in names and "deepseek_setup" in names
+          assert not replies[3]["result"].get("isError")
+          assert not replies[4]["result"].get("isError")
+          print("MCP OK — 12 tools, handshake + fix_agents + net_diagnose")
+          EOF
       - name: fix check node-version-too-old (node 20+ preinstalled on runner)
         run: python scripts/fix.py check node-version-too-old
       - name: importable API smoke test

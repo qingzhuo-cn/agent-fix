@@ -30,6 +30,7 @@ Codex、OpenCode、Hermes、Kimi Code、Pi、ZCode、Cursor、Gemini CLI、Aider
   - [兼容性矩阵](#兼容性矩阵)
   - [问题目录](#问题目录)
   - [在程序中调用](#在程序中调用)
+  - [MCP server（任意 agent 可调用的 12 个工具）](#mcp-server任意-agent-可调用的-12-个工具)
 - [工作原理](#工作原理)
 - [扩展目录](#扩展目录)
 - [常见问题 FAQ](#常见问题-faq)
@@ -64,6 +65,7 @@ AI 编程 Agent 通常通过 npm、图形切换工具（如 CC-Switch）、版�
   agent**，而不只是四大主流。新增 agent = 一行数据，零代码
 - 🖥️ **跨平台** — Windows（含 Git Bash、WSL 兼容）、macOS、Linux
 - 🧩 **技能 + CLI + API 三合一** — 可作为 skill 被 Agent 加载，可在终端调用，也可作为 Python 模块导入
+- ⚡ **MCP server** — 零依赖 stdio MCP server（`mcp/server.py`，12 个工具），让 Claude Code、OpenCode、Cursor、ZCode、Codex 把整个工具箱（`fix_doctor`、`net_diagnose`、`deepseek_setup`…）当原生工具直接调用
 - 📦 **零依赖** — 纯 Python 3.8+ 标准库
 - 🔁 **可做看门狗** — `fix auto` 自动体检并自动修复；失败时非零退出，可直接挂 cron/CI
 - 🧪 **修复必验证** — 每个修复都以真实命令验证收尾，而不是只跑 `--version`
@@ -176,6 +178,25 @@ import json, subprocess
 out = subprocess.run(["fix", "check", "--json"], capture_output=True, text=True)
 report = json.loads(out.stdout)
 ```
+
+### MCP server（任意 agent 可调用的 12 个工具）
+
+同一套工具箱以 MCP server 形式暴露，**任何支持 MCP 的 agent**（Claude Code、
+OpenCode、Cursor、ZCode、Codex）都能把它当原生工具调用：
+
+| 分组 | 工具 |
+|------|------|
+| 核心审查/修复 | `fix_agents`、`fix_doctor`、`fix_check`、`fix_apply`、`fix_info` |
+| 小分支技能 | `net_diagnose`（端点延迟+代理）、`version_check`、`config_audit`（解析错误+泄露密钥）、`log_triage`、`backup_configs`、`restore_configs`、`deepseek_setup` |
+
+```bash
+python scripts/mcp_register.py all        # 向所有已装 agent 注册
+claude mcp list | grep agent-fix          # 验证: ✔ Connected
+```
+
+然后直接对你的 agent 说话：*"run fix_doctor and tell me what's broken"*、
+*"net_diagnose — is DeepSeek reachable?"*、*"backup_configs before I upgrade"*、
+*"deepseek_setup with key sk-…"*。完整文档：[mcp/README.md](mcp/README.md)。
 
 ## 工作原理
 

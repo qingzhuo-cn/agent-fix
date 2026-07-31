@@ -22,4 +22,15 @@ done
 
 rm -f "$HOME/bin/fix" "$HOME/.local/bin/fix" 2>/dev/null || true
 
+# unregister MCP server
+PY=""
+for cand in python3 python py; do
+  if command -v "$cand" >/dev/null 2>&1; then PY="$cand"; break; fi
+done
+if [ -n "$PY" ]; then
+  PYREPO="$REPO"
+  if command -v cygpath >/dev/null 2>&1; then PYREPO="$(cygpath -m "$REPO")"; fi
+  "$PY" "$PYREPO/scripts/mcp_register.py" all --remove 2>/dev/null || true
+fi
+
 echo "[agent-fix] uninstalled"

@@ -18,6 +18,8 @@ the user points it at this repo.
 | `scripts/fix.py` | Cross-platform diagnostic/repair CLI + importable Python API (stdlib only) |
 | `scripts/fix` | Shell launcher for the CLI |
 | `SKILL.md` | Skill manifest (loadable by Hermes, Claude Code, OpenCode, Kimi Code, Pi, …) |
+| `mcp/server.py` | Zero-dependency MCP stdio server — 12 tools (core fix set + 7 branch skills) callable by ANY MCP-capable agent |
+| `scripts/mcp_register.py` | register/unregister the MCP server with Claude Code / OpenCode / Cursor / Codex |
 | `install/` | One-command installers that deploy the skill into every detected agent |
 
 ## The fix protocol (follow in this order)
@@ -51,6 +53,14 @@ the user points it at this repo.
    fix doctor                              # all agents + all issue classes
    claude "ping" --print 2>&1 | head -5    # auth/provider: needs a real model call
    ```
+
+## MCP
+
+If an MCP-capable agent (Claude Code, OpenCode, Cursor, ZCode, Codex) is asking
+questions about this repo, it can also call the toolbox directly: register the
+server with `python scripts/mcp_register.py all`, then use tools `fix_doctor`,
+`fix_apply`, `net_diagnose`, `version_check`, `config_audit`, `log_triage`,
+`backup_configs`, `restore_configs`, `deepseek_setup` (see `mcp/README.md`).
 
 ## Rules
 
