@@ -68,6 +68,7 @@ AI 编程 Agent 通常通过 npm、图形切换工具（如 CC-Switch）、版�
 - ⚡ **MCP server** — 零依赖 stdio MCP server（`mcp/server.py`，13 个工具），让 Claude Code、OpenCode、Cursor、ZCode、Codex 把整个工具箱（`fix_doctor`、`net_diagnose`、`provider_setup`…）当原生工具直接调用
 - 📦 **零依赖** — 纯 Python 3.8+ 标准库
 - 🔁 **可做看门狗** — `fix auto` 自动体检并自动修复；失败时非零退出，可直接挂 cron/CI
+- 💉 **启动即自愈** — 安装器会自动注册各 Agent 的启动钩子（Claude Code `SessionStart`、Codex `[hooks] session_start`、OpenCode 插件、Hermes cron 看门狗），每次启动 agent 自动体检+修复；`fix selfheal` 健康时零输出，绝不打扰
 - 🧪 **修复必验证** — 每个修复都以真实命令验证收尾，而不是只跑 `--version`
 
 ## 快速开始

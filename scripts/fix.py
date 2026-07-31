@@ -11,6 +11,7 @@ Linux, from a terminal OR imported by other programs:
     fix doctor                      # alias for `fix check`
     fix apply <id> [--yes]          # apply fixes for one issue, then verify
     fix auto                        # check all -> auto-apply fixes for broken ones
+    fix selfheal                    # like auto, but silent when healthy + hard deadline
     fix info <id>                   # print the matching doc from fixes/
 
     # Program (importable API)
@@ -21,6 +22,11 @@ Exit codes (useful for cron / CI / watchdog wrappers):
     0  all checks passed
     1  at least one check failed
     2  usage error / catalog missing
+
+`fix selfheal` is the agent-startup hook command: prints NOTHING when everything
+is healthy (so hooks stay quiet), prints one concise line when it fixed or could
+not fix something, and self-aborts after a hard deadline so it never blocks an
+agent from starting.
 
 Pure stdlib, no dependencies. Python 3.8+.
 """
@@ -418,6 +424,23 @@ def _run_one_verify(v: Dict[str, Any], verified: bool, quiet: bool = False) -> b
         return verified
     if platform == "posix" and _is_windows():
         return verified
+    if v.get("kind") == "net":
+        # native network verify — no shell involved (same engine as the check)
+        import netcheck
+
+        r = netcheck.check_endpoint(
+            v.get("host", ""),
+            port=int(v.get("port", 443)),
+            timeout=float(v.get("timeout", 5)),
+        )
+        ok = r["ok"]
+        if not ok:
+            verified = False
+        if not quiet:
+            print(f"    [VERIFY{' OK' if ok else ' FAIL'}] {v['name']}")
+            if r.get("error"):
+                print(f"          {r['error'][:300]}")
+        return verified
     result = run(v["cmd"], timeout=v.get("timeout", 60))
     ok = result["ok"] and ("STILL-MISSING" not in result["stdout"])
     if not ok:
@@ -449,6 +472,52 @@ def auto_fix(catalog: Dict[str, Any], quiet: bool = False) -> Dict[str, Any]:
         else:
             print("   -> healthy")
     return report
+
+
+def run_selfheal(catalog: Dict[str, Any], deadline: float = 75.0) -> Dict[str, Any]:
+    """Check all + auto-fix, silent when healthy. Returns {fixed, unfixed, timed_out}.
+
+    Shared by the CLI (`fix selfheal`) and the MCP server (`self_heal` tool) so
+    both use the exact same pipeline. No printing — callers format the report.
+    """
+    agents = detect_agents(catalog)
+    fixed: List[str] = []
+    unfixed: List[str] = []
+    start = time.monotonic()
+    for issue in catalog["issues"]:
+        if time.monotonic() - start > deadline:
+            return {"fixed": fixed, "unfixed": unfixed, "timed_out": True}
+        state = check_issue(issue, quiet=True, agents=agents)
+        if not state["broken"]:
+            continue
+        fixes = issue.get("fixes") or []
+        if not any(not f.get("manual") for f in fixes):
+            # diagnostic-only issue (e.g. net-connectivity): nothing to
+            # auto-repair, so don't nag the user about it on every start
+            continue
+        outcome = apply_issue(issue, yes=True, quiet=True, agents=agents)
+        if outcome["verified"]:
+            fixed.append(issue["id"])
+        else:
+            unfixed.append(issue["id"])
+    return {"fixed": fixed, "unfixed": unfixed, "timed_out": False}
+
+
+def cmd_selfheal(catalog: Dict[str, Any], args: argparse.Namespace, deadline: float = 75.0) -> int:
+    """CLI wrapper around run_selfheal — prints nothing on success (hook mode)."""
+    r = run_selfheal(catalog, deadline=deadline)
+    if r["timed_out"]:
+        print("agent-fix selfheal: timed out — run 'fix doctor' manually")
+        return 2
+    if not r["fixed"] and not r["unfixed"]:
+        return 0  # healthy — stay silent for hooks
+    parts = []
+    if r["fixed"]:
+        parts.append("fixed: " + ", ".join(r["fixed"]))
+    if r["unfixed"]:
+        parts.append("still broken: " + ", ".join(r["unfixed"]))
+    print("agent-fix selfheal — " + "; ".join(parts))
+    return 1 if r["unfixed"] else 0
 
 
 # ---------------------------------------------------------------- CLI
@@ -541,6 +610,11 @@ def main(argv: Optional[List[str]] = None) -> int:
     p_apply.add_argument("--yes", "-y", action="store_true", help="run fixes without prompting")
     p_auto = sub.add_parser("auto", help="check all; auto-apply fixes for broken ones (watchdog mode)")
     _json_opt(p_auto)
+    p_selfheal = sub.add_parser(
+        "selfheal",
+        help="check all + auto-fix; silent when healthy, hard deadline (agent startup hook mode)",
+    )
+    _json_opt(p_selfheal)
     p_info = sub.add_parser("info", help="print the doc for an issue")
     _json_opt(p_info)
     p_info.add_argument("id", help="issue id")
@@ -567,6 +641,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         report = auto_fix(catalog)
         print(f"\n== summary: {len(report['fixed'])} fixed, {len(report['unfixed'])} still broken")
         return 1 if report["unfixed"] else 0
+    if args.command == "selfheal":
+        return cmd_selfheal(catalog, args)
     if args.command == "info":
         return cmd_info(catalog, args)
     parser.print_help()

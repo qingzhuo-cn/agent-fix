@@ -9,7 +9,7 @@ loading required.
 stdio transport (newline-delimited JSON-RPC 2.0). Runs locally over stdio, so no
 network exposure.
 
-## Tools (13)
+## Tools (16)
 
 | Tool | What it does |
 |------|--------------|
@@ -26,6 +26,9 @@ network exposure.
 | `restore_configs` | list / restore a config backup (`confirm=True` required) |
 | `deepseek_setup` | DeepSeek shortcut: per-agent config snippets; `apply=true` writes Claude settings |
 | `provider_setup` | **any provider**: per-agent config snippets (deepseek/openai/anthropic/google/moonshot/zhipu/qwen/openrouter/ollama/custom) |
+| `self_heal` | run the full check + auto-fix pipeline once — same engine as the startup hooks (`fix selfheal`) |
+| `heal_hooks` | manage the self-heal startup hooks: `status` / `install` / `uninstall` (per agent or all) |
+| `watchdog_status` | every agent's self-heal registration state (hooks + cron + instruction-only) |
 
 Issue ids for `fix_check`/`fix_apply`/`fix_info`:
 `agent-broken-generic`, `npm-postinstall-skipped`, `gui-path-blind`,

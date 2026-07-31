@@ -67,6 +67,7 @@ command. This skill makes that repair one command: `fix apply npm-postinstall-sk
 - ⚡ **MCP server** — a zero-dependency stdio MCP server (`mcp/server.py`, 13 tools) lets Claude Code, OpenCode, Cursor, ZCode, Codex call the whole toolbox (`fix_doctor`, `net_diagnose`, `provider_setup`, …) as native tools
 - 📦 **Zero dependencies** — pure Python 3.8+ stdlib
 - 🔁 **Watchdog-ready** — `fix auto` checks and auto-repairs; non-zero exit on failure drops straight into cron/CI
+- 💉 **Self-heal on agent start** — installers register startup hooks (Claude Code `SessionStart`, Codex `[hooks] session_start`, OpenCode plugin, Hermes cron watchdog) so every agent checks & repairs itself the moment it launches; `fix selfheal` prints nothing when healthy
 - 🧪 **Verified fixes** — every fix ends with a real verification step, not just `--version`
 
 ## Quick Start

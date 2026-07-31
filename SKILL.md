@@ -1,7 +1,7 @@
 ---
 name: agent-fix
 description: "Use when ANY AI coding agent (Claude Code, Codex, OpenCode, Hermes, Kimi Code, Pi, ZCode, Cursor, Gemini CLI, ...) is broken or misconfigured: native binary missing after npm install/upgrade, GUI tools (CC-Switch) report 'installed but cannot run', Node too old, npm registry slow/unreachable, agent auth failures, or pointing any agent at the DeepSeek API. Run `fix agents` to see installed agents, `fix doctor` to diagnose, read the matching fixes/*.md doc, apply the fix, then verify with a real command. An MCP server (mcp/server.py) exposes the same tools plus net_diagnose/version_check/config_audit/log_triage/backup/restore/deepseek_setup to any MCP-capable agent."
-version: 1.4.1
+version: 1.5.0
 author: agent-fix contributors
 license: MIT
 metadata:
@@ -79,11 +79,11 @@ New agents are **data**, not code. Add one line to `catalog.json` → `agents`
 
 ## MCP server (any agent can call the toolbox directly)
 
-`mcp/server.py` is a zero-dependency MCP stdio server exposing 13 tools: the core
+`mcp/server.py` is a zero-dependency MCP stdio server exposing 16 tools: the core
 inspect/fix set (`fix_agents`, `fix_doctor`, `fix_check`, `fix_apply`, `fix_info`)
-plus 8 branch skills (`net_diagnose`, `version_check`, `config_audit`,
+plus 11 branch skills (`net_diagnose`, `version_check`, `config_audit`,
 `log_triage`, `backup_configs`, `restore_configs`, `deepseek_setup`,
-`provider_setup`). Register it
+`provider_setup`, `self_heal`, `heal_hooks`, `watchdog_status`). Register it
 once, and Claude Code / OpenCode / Cursor / ZCode / Codex can call any tool as a
 native function — no SKILL.md loading needed:
 
@@ -109,6 +109,36 @@ cd /path/to/agent-fix-skill && ./scripts/fix auto >> fix.log 2>&1
 
 `fix auto` checks everything (including every detected agent's binary) and
 auto-repairs what's broken; it exits non-zero when something is still broken.
+
+## Self-heal on agent start (zero-touch repairs)
+
+Since v1.5.0 the installers also register a **startup hook** per agent, so every
+time the user launches an agent it checks itself and auto-repairs what's broken
+— no manual `fix doctor` needed:
+
+| Agent | Mechanism |
+|-------|-----------|
+| Claude Code | `~/.claude/settings.json` → `hooks.SessionStart` runs `fix selfheal` |
+| Codex CLI | `~/.codex/config.toml` → `[hooks] session_start` runs `fix selfheal` |
+| OpenCode | `~/.config/opencode/plugins/agent-fix-selfheal.js` (fires on `session.created`) |
+| Hermes | daily `hermes cron` watchdog job (`agent-fix-watchdog`, no-agent, silent unless broken) |
+| kimi-code / pi / zcode / cursor / gemini / aider / qwen-code | no hook API — AGENTS.md instruction covers on-demand repair |
+
+`fix selfheal` (scripts/fix.py) runs every catalog check, auto-applies fixes for
+anything broken, prints **nothing when healthy** (hooks stay quiet) and self-
+aborts after a hard deadline so it never blocks an agent from starting.
+
+Manage it yourself:
+
+```bash
+python scripts/heal_hooks.py status            # what's registered
+python scripts/heal_hooks.py install           # register (idempotent, auto-run by installers)
+python scripts/heal_hooks.py uninstall         # remove every agent-fix hook
+python scripts/heal_hooks.py install --agent claude-code   # one agent only
+```
+
+Every config write is marker-tagged and backed up (`*.agent-fix-bak`) before
+first modification; re-running install after `git pull` is safe.
 
 ## Per-agent installation (how this skill gets loaded)
 

@@ -33,7 +33,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-VERSION = "1.4.1"
+VERSION = "1.5.0"
 PROTOCOL = "2024-11-05"
 
 ROOT = Path(__file__).resolve().parent.parent

@@ -94,6 +94,14 @@ else
   skip "python not found — register MCP manually (see mcp/README.md)"
 fi
 
+# --- Self-heal startup hooks (claude/codex/opencode/hermes) ----------
+info "registering self-heal startup hooks (agents check+repair themselves on start)..."
+if [ -n "$PY" ]; then
+  "$PY" "$PYREPO/scripts/heal_hooks.py" install || skip "self-heal hooks incomplete (see scripts/heal_hooks.py status)"
+else
+  skip "python not found — self-heal hooks skipped (run scripts/heal_hooks.py install later)"
+fi
+
 # --- CLI --------------------------------------------------------------
 if [ -d "$HOME/bin" ] && [[ ":$PATH:" == *":$HOME/bin:"* ]]; then
   install_cli "$HOME/bin"

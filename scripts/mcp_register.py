@@ -97,7 +97,12 @@ def register_codex() -> str:
     cfg = HOME / ".codex" / "config.toml"
     if not cfg.parent.exists():
         return "SKIP codex: not installed"
-    block = f'[mcp_servers.{NAME}]\ncommand = "{_python()}"\nargs = ["{SERVER_ARG}"]\n'
+    block = (
+        f"[mcp_servers.{NAME}]\n"
+        # json.dumps -> \\\\, \\" escapes are valid TOML basic-string escapes too
+        f"command = {json.dumps(_python())}\n"
+        f"args = [{json.dumps(SERVER_ARG)}]\n"
+    )
     text = cfg.read_text(encoding="utf-8") if cfg.exists() else ""
     marker = f"[mcp_servers.{NAME}]"
     if marker in text:
@@ -108,8 +113,12 @@ def register_codex() -> str:
             if line.strip() == marker:
                 in_block = True
                 continue
-            if in_block and line.strip().startswith("["):
-                in_block = False
+            if in_block:
+                s = line.strip()
+                # stop the block at the next section, a comment/marker, or a
+                # blank line — never delete content that isn't ours
+                if s.startswith("[") or s.startswith("#") or not s:
+                    in_block = False
             if not in_block:
                 out.append(line)
         text = "\n".join(out).rstrip() + "\n"

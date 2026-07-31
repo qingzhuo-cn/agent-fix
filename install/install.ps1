@@ -103,6 +103,14 @@ try {
     Write-Host "[agent-fix] MCP registration incomplete (see mcp\README.md)" -ForegroundColor Yellow
 }
 
+# --- Self-heal startup hooks (claude/codex/opencode/hermes) ---
+Write-Host "[agent-fix] registering self-heal startup hooks..." -ForegroundColor Cyan
+try {
+    & python "$Repo\scripts\heal_hooks.py" install
+} catch {
+    Write-Host "[agent-fix] self-heal hooks incomplete (run scripts\heal_hooks.py install later)" -ForegroundColor Yellow
+}
+
 # --- CLI ---
 Install-Cli
 
