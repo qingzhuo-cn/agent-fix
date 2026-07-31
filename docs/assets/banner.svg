@@ -48,7 +48,11 @@
     <text x="608" y="202" text-anchor="middle" fill="#064e3b">Hermes</text>
     <rect x="218" y="224" width="92" height="30" rx="15" fill="#f59e0b" opacity="0.9"/>
     <text x="264" y="244" text-anchor="middle" fill="#451a03">npm CLI</text>
-    <rect x="322" y="224" width="120" height="30" rx="15" fill="#64748b" opacity="0.9"/>
-    <text x="382" y="244" text-anchor="middle" fill="#f8fafc">Windows · macOS · Linux</text>
+    <rect x="322" y="224" width="110" height="30" rx="15" fill="#64748b" opacity="0.9"/>
+    <text x="377" y="244" text-anchor="middle" fill="#f8fafc">Windows</text>
+    <rect x="444" y="224" width="100" height="30" rx="15" fill="#64748b" opacity="0.9"/>
+    <text x="494" y="244" text-anchor="middle" fill="#f8fafc">macOS</text>
+    <rect x="556" y="224" width="90" height="30" rx="15" fill="#64748b" opacity="0.9"/>
+    <text x="601" y="244" text-anchor="middle" fill="#f8fafc">Linux</text>
   </g>
 </svg>
