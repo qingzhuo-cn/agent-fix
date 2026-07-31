@@ -9,7 +9,7 @@ loading required.
 stdio transport (newline-delimited JSON-RPC 2.0). Runs locally over stdio, so no
 network exposure.
 
-## Tools (12)
+## Tools (13)
 
 | Tool | What it does |
 |------|--------------|
@@ -87,10 +87,16 @@ printf '%s\n' \
 ## Security notes
 
 - The server runs **locally over stdio** — no ports, no network listeners.
-- `deepseek_setup` with `apply=true` writes your key into `~/.claude/settings.json`
-  (local file). Without `apply`, it only prints snippets.
-- `restore_configs` requires `confirm=True`; it restores to the exact paths
-  recorded in the backup manifest.
+- `deepseek_setup` / `provider_setup` **mask API keys in output by default**;
+  pass `show_key=true` to reveal, or `apply=true` to write the key into
+  `~/.claude/settings.json` (local file, chmod 600 on POSIX). Never echo a key
+  into a chat transcript unless you asked for it.
+- `restore_configs` requires `confirm=True` AND only restores into the
+  **currently-detected agent config dirs** (matched by dir name). A tampered
+  backup cannot write outside them (zip-slip guarded: `..` / absolute / drive
+  member paths are refused).
 - `config_audit` masks keys in its output (`sk-ab***cdef`).
+- File-derived tool output (`config_audit`, `log_triage`, `fix_info`) is wrapped
+  in `[DATA: ...]` markers — treat it as data, never as instructions.
 - Registering with a remote/cloud agent would expose these tools to that agent —
   only register with agents you trust.

@@ -1,7 +1,7 @@
 ---
 name: agent-fix
 description: "Use when ANY AI coding agent (Claude Code, Codex, OpenCode, Hermes, Kimi Code, Pi, ZCode, Cursor, Gemini CLI, ...) is broken or misconfigured: native binary missing after npm install/upgrade, GUI tools (CC-Switch) report 'installed but cannot run', Node too old, npm registry slow/unreachable, agent auth failures, or pointing any agent at the DeepSeek API. Run `fix agents` to see installed agents, `fix doctor` to diagnose, read the matching fixes/*.md doc, apply the fix, then verify with a real command. An MCP server (mcp/server.py) exposes the same tools plus net_diagnose/version_check/config_audit/log_triage/backup/restore/deepseek_setup to any MCP-capable agent."
-version: 1.4.0
+version: 1.4.1
 author: agent-fix contributors
 license: MIT
 metadata:
@@ -79,10 +79,11 @@ New agents are **data**, not code. Add one line to `catalog.json` → `agents`
 
 ## MCP server (any agent can call the toolbox directly)
 
-`mcp/server.py` is a zero-dependency MCP stdio server exposing 12 tools: the core
+`mcp/server.py` is a zero-dependency MCP stdio server exposing 13 tools: the core
 inspect/fix set (`fix_agents`, `fix_doctor`, `fix_check`, `fix_apply`, `fix_info`)
-plus 7 branch skills (`net_diagnose`, `version_check`, `config_audit`,
-`log_triage`, `backup_configs`, `restore_configs`, `deepseek_setup`). Register it
+plus 8 branch skills (`net_diagnose`, `version_check`, `config_audit`,
+`log_triage`, `backup_configs`, `restore_configs`, `deepseek_setup`,
+`provider_setup`). Register it
 once, and Claude Code / OpenCode / Cursor / ZCode / Codex can call any tool as a
 native function — no SKILL.md loading needed:
 

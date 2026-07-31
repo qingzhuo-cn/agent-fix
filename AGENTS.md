@@ -18,7 +18,7 @@ the user points it at this repo.
 | `scripts/fix.py` | Cross-platform diagnostic/repair CLI + importable Python API (stdlib only) |
 | `scripts/fix` | Shell launcher for the CLI |
 | `SKILL.md` | Skill manifest (loadable by Hermes, Claude Code, OpenCode, Kimi Code, Pi, …) |
-| `mcp/server.py` | Zero-dependency MCP stdio server — 12 tools (core fix set + 7 branch skills) callable by ANY MCP-capable agent |
+| `mcp/server.py` | Zero-dependency MCP stdio server — 13 tools (5 core fix set + 8 branch skills) callable by ANY MCP-capable agent |
 | `scripts/mcp_register.py` | register/unregister the MCP server with Claude Code / OpenCode / Cursor / Codex |
 | `install/` | One-command installers that deploy the skill into every detected agent |
 
