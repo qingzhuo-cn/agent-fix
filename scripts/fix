@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# agent-fix CLI launcher — thin wrapper that finds python and runs scripts/fix.py
+# Works from anywhere: ./fix, or symlinked onto PATH as `fix`.
+set -euo pipefail
+
+# Resolve the real script path, following symlinks (fix may be symlinked onto
+# PATH as `fix`, e.g. ~/bin/fix -> <repo>/scripts/fix).
+SOURCE="${BASH_SOURCE[0]}"
+while [ -L "$SOURCE" ]; do
+  DIR="$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)"
+  SOURCE="$(readlink "$SOURCE")"
+  case "$SOURCE" in
+    /*) ;;
+    *) SOURCE="$DIR/$SOURCE" ;;
+  esac
+done
+SCRIPT_DIR="$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)"
+# Convert MSYS/POSIX path to a form native python.exe can open on Windows
+if command -v cygpath >/dev/null 2>&1; then
+  SCRIPT_DIR="$(cygpath -m "$SCRIPT_DIR")"
+fi
+PY=""
+
+for cand in python3 python py; do
+  if command -v "$cand" >/dev/null 2>&1; then
+    if "$cand" -c "import sys; raise SystemExit(0 if sys.version_info >= (3,8) else 1)" 2>/dev/null; then
+      PY="$cand"
+      break
+    fi
+  fi
+done
+
+if [ -z "$PY" ]; then
+  echo "error: no python >= 3.8 found (looked for python3/python/py)" >&2
+  exit 2
+fi
+
+exec "$PY" "$SCRIPT_DIR/fix.py" "$@"

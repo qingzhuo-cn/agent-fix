@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="280" viewBox="0 0 1000 280">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e1b4b"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#a78bfa"/>
+    </linearGradient>
+    <linearGradient id="spark" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+  </defs>
+  <rect width="1000" height="280" rx="28" fill="url(#bg)"/>
+  <g opacity="0.08" stroke="#94a3b8" stroke-width="1.5" fill="none">
+    <circle cx="880" cy="40" r="120"/>
+    <circle cx="880" cy="40" r="200"/>
+    <circle cx="120" cy="250" r="160"/>
+  </g>
+
+  <!-- wrench icon -->
+  <g transform="translate(120,52)" fill="url(#accent)">
+    <path d="M74.5 4.5 53.6 25.4a14.5 14.5 0 0 0-18.4 17.4L12.9 65.1a8.5 8.5 0 0 0 12 12l22.3-22.3a14.5 14.5 0 0 0 17.4-18.4L85.5 15.5a8.5 8.5 0 0 0-11-11Z"/>
+    <circle cx="54" cy="68" r="14" fill="#0f172a"/>
+    <rect x="12" y="56" width="22" height="24" rx="8" fill="none" stroke="url(#accent)" stroke-width="4"/>
+  </g>
+
+  <!-- spark -->
+  <g transform="translate(115,200)">
+    <path d="M0 -18 L6 -5 L20 -2 L8 6 L12 21 L0 12 L-12 21 L-8 6 L-20 -2 L-6 -5 Z" fill="url(#spark)"/>
+  </g>
+
+  <!-- title -->
+  <text x="215" y="118" font-family="Segoe UI, Arial, sans-serif" font-size="64" font-weight="700" fill="#ffffff">agent-fix</text>
+  <text x="218" y="158" font-family="Segoe UI, Arial, sans-serif" font-size="22" fill="#94a3b8">Universal repair skill &amp; CLI for AI coding agents</text>
+
+  <!-- tag chips -->
+  <g font-family="Consolas, monospace" font-size="15" font-weight="600">
+    <rect x="218" y="182" width="120" height="30" rx="15" fill="#0ea5e9" opacity="0.9"/>
+    <text x="278" y="202" text-anchor="middle" fill="#ffffff">Claude Code</text>
+    <rect x="350" y="182" width="86" height="30" rx="15" fill="#38bdf8" opacity="0.85"/>
+    <text x="393" y="202" text-anchor="middle" fill="#0c4a6e">Codex</text>
+    <rect x="448" y="182" width="100" height="30" rx="15" fill="#a78bfa" opacity="0.9"/>
+    <text x="498" y="202" text-anchor="middle" fill="#ffffff">OpenCode</text>
+    <rect x="560" y="182" width="96" height="30" rx="15" fill="#34d399" opacity="0.9"/>
+    <text x="608" y="202" text-anchor="middle" fill="#064e3b">Hermes</text>
+    <rect x="218" y="224" width="92" height="30" rx="15" fill="#f59e0b" opacity="0.9"/>
+    <text x="264" y="244" text-anchor="middle" fill="#451a03">npm CLI</text>
+    <rect x="322" y="224" width="120" height="30" rx="15" fill="#64748b" opacity="0.9"/>
+    <text x="382" y="244" text-anchor="middle" fill="#f8fafc">Windows · macOS · Linux</text>
+  </g>
+</svg>

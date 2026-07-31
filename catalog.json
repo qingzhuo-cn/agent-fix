@@ -1,0 +1,218 @@
+{
+  "name": "agent-fix",
+  "version": "1.0.0",
+  "description": "Universal diagnostic/fix catalog for AI coding agents (Claude Code, Codex, OpenCode, Hermes, ...)",
+  "issues": [
+    {
+      "id": "npm-postinstall-skipped",
+      "title": "npm postinstall skipped -> native binary missing",
+      "agents": ["claude-code", "opencode", "codex", "npm-cli"],
+      "symptoms": [
+        "opencode --version fails with 'postinstall script was not run'",
+        "claude --version fails with 'native binary not installed'",
+        "GUI tools show the agent as 'installed but cannot run'"
+      ],
+      "checks": [
+        {
+          "name": "npm ignore-scripts must be false",
+          "cmd": "npm config get ignore-scripts",
+          "pass": { "stdout_equals": "false" }
+        },
+        {
+          "name": "opencode binary runs",
+          "cmd": "opencode --version 2>&1 || true",
+          "pass": { "stdout_not_contains": ["postinstall", "native binary", "not installed", "Error"] }
+        },
+        {
+          "name": "claude binary runs",
+          "cmd": "claude --version 2>&1 || true",
+          "pass": { "stdout_not_contains": ["postinstall", "native binary", "not installed", "Error"] }
+        }
+      ],
+      "fixes": [
+        {
+          "name": "Re-run opencode postinstall",
+          "cwd": "npm_root/opencode-ai",
+          "cmd": "node postinstall.mjs"
+        },
+        {
+          "name": "Re-run claude-code install script (auto-detects postinstall/install)",
+          "cwd": "npm_root/@anthropic-ai/claude-code",
+          "cmd": "node -e \"const s=require('./package.json').scripts||{};const f=s.postinstall||s.install;if(!f){console.error('no install/postinstall script');process.exit(1)}console.log('running:',f);require('child_process').execSync(f,{stdio:'inherit'})\""
+        }
+      ],
+      "verify": [
+        { "name": "opencode --version", "cmd": "opencode --version 2>&1" },
+        { "name": "claude --version", "cmd": "claude --version 2>&1" }
+      ],
+      "doc": "fixes/npm-postinstall.md"
+    },
+    {
+      "id": "gui-path-blind",
+      "title": "GUI apps (CC-Switch etc.) cannot see agent binaries",
+      "agents": ["claude-code", "codex", "opencode", "hermes", "cc-switch"],
+      "symptoms": [
+        "CC-Switch or other GUI reports 'installed - cannot run'",
+        "command works in terminal but not in GUI-launched processes"
+      ],
+      "checks": [
+        {
+          "name": "npm global dir in GUI PATH",
+          "platform": "windows",
+          "cmd": "{ reg query \"HKCU\\Environment\" /v Path 2>/dev/null; reg query \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment\" /v Path 2>/dev/null; } | tr -d '\\r' | grep -qiE 'npm' && echo FOUND || echo MISSING",
+          "pass": { "stdout_contains": ["FOUND"] }
+        },
+        {
+          "name": "hermes bin dir in GUI PATH",
+          "platform": "windows",
+          "cmd": "{ reg query \"HKCU\\Environment\" /v Path 2>/dev/null; reg query \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment\" /v Path 2>/dev/null; } | tr -d '\\r' | grep -qiE 'hermes' && echo FOUND || echo MISSING",
+          "pass": { "stdout_contains": ["FOUND"] }
+        }
+      ],
+      "fixes": [
+        {
+          "name": "Add npm global dir to user PATH (registry)",
+          "platform": "windows",
+          "cmd": "powershell -NoProfile -Command \"\\$d=[Environment]::GetEnvironmentVariable('Path','User');\\$p=(npm config get prefix);if(\\$d -notmatch [regex]::Escape(\\$p)){[Environment]::SetEnvironmentVariable('Path',\\$d+';'+\\$p,'User');Write-Output ('Added: '+\\$p)}else{Write-Output 'npm dir already in user PATH'}\""
+        },
+        {
+          "name": "Add hermes bin dir to user PATH (registry)",
+          "platform": "windows",
+          "cmd": "powershell -NoProfile -Command \"\\$d=[Environment]::GetEnvironmentVariable('Path','User');\\$p=(Split-Path (Get-Command hermes -ErrorAction SilentlyContinue).Source -Parent);if(\\$p -and \\$d -notmatch [regex]::Escape(\\$p)){[Environment]::SetEnvironmentVariable('Path',\\$d+';'+\\$p,'User');Write-Output ('Added: '+\\$p)}else{Write-Output 'hermes dir already in user PATH or hermes not found'}\""
+        }
+      ],
+      "verify": [
+        {
+          "name": "npm dir visible to GUI PATH",
+          "platform": "windows",
+          "cmd": "{ reg query \"HKCU\\Environment\" /v Path 2>/dev/null; reg query \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment\" /v Path 2>/dev/null; } | tr -d '\\r' | grep -qiE 'npm' && echo OK || echo STILL-MISSING"
+        },
+        {
+          "name": "hermes dir visible to GUI PATH",
+          "platform": "windows",
+          "cmd": "{ reg query \"HKCU\\Environment\" /v Path 2>/dev/null; reg query \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment\" /v Path 2>/dev/null; } | tr -d '\\r' | grep -qiE 'hermes' && echo OK || echo STILL-MISSING"
+        }
+      ],
+      "doc": "fixes/gui-path.md"
+    },
+    {
+      "id": "node-version-too-old",
+      "title": "Node too old for the agent",
+      "agents": ["claude-code", "codex", "opencode"],
+      "symptoms": [
+        "EBADENGINE / 'Unsupported engine' during npm install",
+        "agent crashes at startup with a SyntaxError or engines message"
+      ],
+      "checks": [
+        {
+          "name": "node is installed",
+          "cmd": "node -v 2>&1 || true",
+          "pass": { "stdout_not_contains": ["not recognized", "command not found"] }
+        },
+        {
+          "name": "node major >= 20",
+          "cmd": "node -e \"const m=Number(process.versions.node.split('.')[0]);process.exit(m>=20?0:1)\"",
+          "pass": { "exit": 0 }
+        }
+      ],
+      "fixes": [
+        {
+          "name": "Install Node LTS via nvm-windows/fnm (manual, see doc)",
+          "manual": true,
+          "cmd": "echo 'Manual step: install Node LTS (nvm install lts && nvm use lts on Windows; nvm install --lts on POSIX), then reinstall global agents. See fixes/node-version.md'"
+        }
+      ],
+      "verify": [
+        { "name": "node -v", "cmd": "node -v 2>&1" }
+      ],
+      "doc": "fixes/node-version.md"
+    },
+    {
+      "id": "npm-registry-mirror",
+      "title": "npm registry slow or unreachable",
+      "agents": ["claude-code", "codex", "opencode", "npm-cli"],
+      "symptoms": [
+        "npm install/upgrade hangs or fails with ETIMEDOUT/ECONNRESET",
+        "agent upgrades fail mid-way and leave postinstall skipped"
+      ],
+      "checks": [
+        {
+          "name": "npm registry reachable",
+          "cmd": "npm ping 2>&1 || true",
+          "timeout": 45,
+          "pass": { "stdout_contains": ["PONG"] }
+        }
+      ],
+      "fixes": [
+        {
+          "name": "Switch registry to npmmirror (China-friendly)",
+          "cmd": "npm config set registry https://registry.npmmirror.com"
+        }
+      ],
+      "verify": [
+        { "name": "npm config get registry", "cmd": "npm config get registry 2>&1" },
+        { "name": "npm ping", "cmd": "npm ping 2>&1 || true", "timeout": 45 }
+      ],
+      "doc": "fixes/npm-registry.md"
+    },
+    {
+      "id": "agent-auth-broken",
+      "title": "Agent not logged in / expired auth / missing API key",
+      "agents": ["claude-code", "codex"],
+      "symptoms": [
+        "'Not logged in' or 401 Unauthorized on every prompt",
+        "--version works but real prompts fail"
+      ],
+      "checks": [
+        {
+          "name": "claude credential file or auth env present",
+          "cmd": "test -f \"$HOME/.claude/.credentials.json\" && echo OK || { env | grep -qE 'ANTHROPIC_AUTH_TOKEN|ANTHROPIC_API_KEY' && echo OK || echo NO; }",
+          "pass": { "stdout_contains": ["OK"] }
+        },
+        {
+          "name": "codex auth file or API key env present",
+          "cmd": "test -f \"$HOME/.codex/auth.json\" && echo OK || { env | grep -qE 'OPENAI_API_KEY' && echo OK || echo NO; }",
+          "pass": { "stdout_contains": ["OK"] }
+        }
+      ],
+      "fixes": [
+        {
+          "name": "Interactive login (manual, see doc)",
+          "manual": true,
+          "cmd": "echo 'Manual step: run claude /login or codex login (or set the right API-key env). See fixes/agent-auth.md'"
+        }
+      ],
+      "verify": [
+        { "name": "claude /login or env auth configured", "cmd": "echo 'Verify with a real prompt: claude \"ping\" --print'" }
+      ],
+      "doc": "fixes/agent-auth.md"
+    },
+    {
+      "id": "deepseek-provider",
+      "title": "Agent not pointed at DeepSeek API",
+      "agents": ["claude-code", "codex", "opencode", "hermes"],
+      "symptoms": [
+        "want to run agents on DeepSeek models (deepseek-chat / deepseek-reasoner)",
+        "401 or 'model not found' after switching provider"
+      ],
+      "checks": [
+        {
+          "name": "a DeepSeek or Anthropic-compatible key is set",
+          "cmd": "env | grep -qE 'DEEPSEEK_API_KEY|ANTHROPIC_AUTH_TOKEN|ANTHROPIC_API_KEY|OPENAI_API_KEY' && echo SET || echo UNSET",
+          "pass": { "stdout_contains": ["SET"] }
+        }
+      ],
+      "fixes": [
+        {
+          "name": "Configure DeepSeek per agent (manual, see doc)",
+          "manual": true,
+          "cmd": "echo 'Manual step: set ANTHROPIC_BASE_URL=https://api.deepseek.com/anthropic for Claude Code, OPENAI_BASE_URL=https://api.deepseek.com for Codex/OpenCode. See fixes/deepseek-provider.md'"
+        }
+      ],
+      "verify": [
+        { "name": "model round-trip", "cmd": "echo 'Verify with a real model call: claude \"say hi\" --print'" }
+      ],
+      "doc": "fixes/deepseek-provider.md"
+    }
+  ]
+}

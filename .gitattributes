@@ -1,0 +1,9 @@
+# Keep shell/python files LF-only — CRLF breaks bash/sh on Linux/macOS
+*.sh        text eol=lf
+*.py        text eol=lf
+*.ps1       text eol=crlf
+*.md        text eol=lf
+*.json      text eol=lf
+*.yml       text eol=lf
+*.svg       text eol=lf
+*.cmd       text eol=crlf
