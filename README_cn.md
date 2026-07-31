@@ -67,7 +67,7 @@ AI 编程 Agent 通常通过 npm、图形切换工具（如 CC-Switch）、版�
 ## 快速开始
 
 ```bash
-git clone https://github.com/<你的用户名>/agent-fix-skill.git
+git clone https://github.com/qingzhuo-cn/agent-fix-skill.git
 cd agent-fix-skill
 
 # 1) CLI —— 无需安装，直接可用

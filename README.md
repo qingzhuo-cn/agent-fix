@@ -69,7 +69,7 @@ command. This skill makes that repair one command: `fix apply npm-postinstall-sk
 ## Quick Start
 
 ```bash
-git clone https://github.com/<your-name>/agent-fix-skill.git
+git clone https://github.com/qingzhuo-cn/agent-fix-skill.git
 cd agent-fix-skill
 
 # 1) CLI — no install needed
