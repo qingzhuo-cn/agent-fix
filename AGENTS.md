@@ -43,6 +43,7 @@ the user points it at this repo.
    | `npm-registry-mirror` | npm install/upgrade hangs or `ETIMEDOUT` / `ECONNRESET` |
    | `agent-auth-broken` | "Not logged in" / 401 / missing API key |
    | `deepseek-provider` | point any agent (incl. Kimi Code / Pi / ZCode) at the DeepSeek API |
+   | `net-connectivity` | API endpoints unreachable (TCP/DNS/proxy layer under all agents) |
 
 3. **Apply the fix.** `./scripts/fix apply <id> --yes` auto-applies; manual fixes
    (node install, interactive login, native agent reinstall) print the exact

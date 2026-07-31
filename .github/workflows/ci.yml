@@ -21,6 +21,12 @@ jobs:
         run: python scripts/fix.py list
       - name: fix agents (registry smoke)
         run: python scripts/fix.py agents
+      - name: netcheck engine smoke (does not gate on reachability)
+        run: |
+          python scripts/netcheck.py --timeout 3 > /tmp/net.txt || true
+          grep -q "NETWORK DIAGNOSTIC" /tmp/net.txt
+          grep -q "deepseek" /tmp/net.txt
+          echo "netcheck engine OK"
       - name: MCP server handshake + tools smoke test
         run: |
           python - <<'EOF'

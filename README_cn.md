@@ -151,6 +151,7 @@ $ fix apply npm-postinstall-skipped --yes
 | `npm-registry-mirror` | npm 安装/升级慢或不可达 | 全部 npm Agent | [doc](fixes/npm-registry.md) |
 | `agent-auth-broken` | 未登录 / OAuth 过期 / 缺少 API Key | claude-code, codex, kimi-code, pi | [doc](fixes/agent-auth.md) |
 | `deepseek-provider` | 把任意 Agent 指向 DeepSeek API（deepseek-chat / deepseek-reasoner） | claude-code, codex, opencode, hermes, kimi-code, pi, zcode | [doc](fixes/deepseek-provider.md) |
+| `net-connectivity` | Agent API 端点不可达（TCP/DNS/代理层，所有 agent 的底层依赖） | 全部（网络层） | [doc](fixes/net-connectivity.md) |
 
 Agent 专项文档：[Kimi Code](fixes/kimi-code.md) · [Pi](fixes/pi.md) · [ZCode](fixes/zcode.md)
 

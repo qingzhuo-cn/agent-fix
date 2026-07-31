@@ -1,7 +1,7 @@
 {
   "name": "agent-fix",
-  "version": "1.2.0",
-  "description": "Universal diagnostic/fix catalog for ALL AI coding agents (Claude Code, Codex, OpenCode, Hermes, Kimi Code, Pi, ZCode, Cursor, ...) — plus MCP server + branch skills",
+  "version": "1.3.0",
+  "description": "Universal diagnostic/fix catalog for ALL AI coding agents (Claude Code, Codex, OpenCode, Hermes, Kimi Code, Pi, ZCode, Cursor, ...) — plus MCP server, branch skills, and network diagnostics",
   "agents": {
     "claude-code":  { "name": "Claude Code",          "bin": ["claude"],            "config": "~/.claude",             "skills": "~/.claude/skills",        "npm_pkg": "@anthropic-ai/claude-code", "provider_env": ["ANTHROPIC_BASE_URL", "ANTHROPIC_AUTH_TOKEN"], "home": "https://docs.anthropic.com/claude-code" },
     "codex":        { "name": "Codex CLI",             "bin": ["codex"],             "config": "~/.codex",              "skills": "~/.codex/skills",          "npm_pkg": "@openai/codex",            "provider_env": ["OPENAI_BASE_URL", "OPENAI_API_KEY"], "home": "https://github.com/openai/codex" },
@@ -275,6 +275,39 @@
         { "name": "{name} --version", "cmd": "{bin} --version 2>&1 || true" }
       ],
       "doc": "fixes/agent-matrix.md"
+    },
+    {
+      "id": "net-connectivity",
+      "title": "Agent API endpoints unreachable (network / proxy / DNS)",
+      "agents": ["all"],
+      "symptoms": [
+        "agents fail with connection timeouts / ETIMEDOUT / ECONNRESET",
+        "'suddenly stopped working' across multiple agents at once",
+        "slow responses from one provider but not others"
+      ],
+      "checks": [
+        { "name": "anthropic (claude-code) reachable", "kind": "net", "host": "api.anthropic.com", "port": 443, "timeout": 5 },
+        { "name": "openai (codex) reachable", "kind": "net", "host": "api.openai.com", "port": 443, "timeout": 5 },
+        { "name": "deepseek reachable", "kind": "net", "host": "api.deepseek.com", "port": 443, "timeout": 5 },
+        { "name": "moonshot (kimi) reachable", "kind": "net", "host": "api.moonshot.cn", "port": 443, "timeout": 5 },
+        { "name": "google (gemini) reachable", "kind": "net", "host": "generativelanguage.googleapis.com", "port": 443, "timeout": 5 },
+        { "name": "zhipu (zcode/glm) reachable", "kind": "net", "host": "open.bigmodel.cn", "port": 443, "timeout": 5 },
+        { "name": "alibaba (qwen) reachable", "kind": "net", "host": "dashscope.aliyuncs.com", "port": 443, "timeout": 5 },
+        { "name": "github (gh/actions) reachable", "kind": "net", "host": "api.github.com", "port": 443, "timeout": 5 },
+        { "name": "npm registry reachable", "kind": "net", "host": "registry.npmjs.org", "port": 443, "timeout": 5 }
+      ],
+      "fixes": [
+        {
+          "name": "Manual: fix network layer (see fixes/net-connectivity.md)",
+          "manual": true,
+          "cmd": "echo 'Manual steps: check proxy env / DNS / VPN / hosts file; use a mirror (npm-registry-mirror); retry after network change. Full guide: fixes/net-connectivity.md'"
+        }
+      ],
+      "verify": [
+        { "name": "deepseek reachable", "kind": "net", "host": "api.deepseek.com", "port": 443, "timeout": 5 },
+        { "name": "npm registry reachable", "kind": "net", "host": "registry.npmjs.org", "port": 443, "timeout": 5 }
+      ],
+      "doc": "fixes/net-connectivity.md"
     }
   ]
 }

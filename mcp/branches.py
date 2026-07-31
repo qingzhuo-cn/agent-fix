@@ -57,45 +57,14 @@ def _env(key: str) -> Optional[str]:
 
 
 def net_diagnose(timeout: float = 5.0) -> str:
-    """Check TCP connectivity + latency to every agent's API endpoint."""
-    endpoints = [
-        ("anthropic (claude-code)", "api.anthropic.com"),
-        ("openai (codex)", "api.openai.com"),
-        ("deepseek", "api.deepseek.com"),
-        ("moonshot (kimi)", "api.moonshot.cn"),
-        ("google (gemini)", "generativelanguage.googleapis.com"),
-        ("zhipu (zcode/glm)", "open.bigmodel.cn"),
-        ("alibaba (qwen)", "api.dashscope.aliyuncs.com"),
-        ("npm registry", "registry.npmjs.org"),
-    ]
-    lines = ["NETWORK DIAGNOSTIC (TCP:443, timeout=%ss)" % timeout, ""]
-    for name, host in endpoints:
-        t0 = datetime.datetime.now()
-        try:
-            with socket.create_connection((host, 443), timeout=timeout):
-                ms = int((datetime.datetime.now() - t0).total_seconds() * 1000)
-                lines.append(f"  OK      {name:<26} {host}  ({ms}ms)")
-        except socket.gaierror:
-            lines.append(f"  DNS-FAIL {name:<26} {host}")
-        except socket.timeout:
-            lines.append(f"  TIMEOUT {name:<26} {host}  (>{timeout}s)")
-        except OSError as e:
-            lines.append(f"  ERROR   {name:<26} {host}  ({e})")
-    lines.append("")
-    lines.append("PROXY ENV:")
-    for k in ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY"):
-        lines.append(f"  {k:<12} = {_env(k) or _env(k.lower()) or '(unset)'}")
-    npm_proxy = None
-    try:
-        import subprocess
+    """Check TCP connectivity + latency to every agent's API endpoint.
 
-        npm_proxy = subprocess.run(
-            ["npm", "config", "get", "proxy"], capture_output=True, text=True, timeout=10
-        ).stdout.strip()
-    except Exception:
-        pass
-    lines.append(f"  npm proxy = {npm_proxy or '(unset)'}")
-    return "\n".join(lines)
+    Backed by the shared scripts/netcheck.py engine — the same checks the CLI
+    runs for the `net-connectivity` catalog issue.
+    """
+    import netcheck  # scripts/ is on sys.path (server.py inserts it)
+
+    return netcheck.format_report(timeout=timeout)
 
 
 # ---------------------------------------------------------------- branch 2

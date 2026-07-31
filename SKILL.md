@@ -1,7 +1,7 @@
 ---
 name: agent-fix
 description: "Use when ANY AI coding agent (Claude Code, Codex, OpenCode, Hermes, Kimi Code, Pi, ZCode, Cursor, Gemini CLI, ...) is broken or misconfigured: native binary missing after npm install/upgrade, GUI tools (CC-Switch) report 'installed but cannot run', Node too old, npm registry slow/unreachable, agent auth failures, or pointing any agent at the DeepSeek API. Run `fix agents` to see installed agents, `fix doctor` to diagnose, read the matching fixes/*.md doc, apply the fix, then verify with a real command. An MCP server (mcp/server.py) exposes the same tools plus net_diagnose/version_check/config_audit/log_triage/backup/restore/deepseek_setup to any MCP-capable agent."
-version: 1.2.0
+version: 1.3.0
 author: agent-fix contributors
 license: MIT
 metadata:
@@ -60,6 +60,7 @@ at `--version`; auth/network issues only show up on a real call.
    | `npm-registry-mirror` | install/upgrade slow or failing |
    | `agent-auth-broken` | not logged in / 401 / missing key |
    | `deepseek-provider` | point any agent at DeepSeek API |
+   | `net-connectivity` | API endpoints unreachable — TCP/DNS/proxy layer under all agents |
 3. **Apply.** `./scripts/fix apply <id> --yes` (auto), or follow the doc's `## Fix`
    section manually. For `manual` fixes (node install, interactive login, native
    agent reinstall) the CLI prints the exact command — run it.

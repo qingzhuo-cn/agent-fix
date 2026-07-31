@@ -255,9 +255,21 @@ def _run_one_check(
         return {"name": check["name"], "status": "SKIP", "detail": "windows-only", "exit": None, "agent": agent_id}
     if platform == "posix" and _is_windows():
         return {"name": check["name"], "status": "SKIP", "detail": "posix-only", "exit": None, "agent": agent_id}
-    result = run(check["cmd"], timeout=check.get("timeout", 30))
-    passed = _passes(check.get("pass"), result)
-    detail = result["stdout"] or result["stderr"]
+    if check.get("kind") == "net":
+        # native network check — no shell involved (see scripts/netcheck.py)
+        import netcheck
+
+        r = netcheck.check_endpoint(
+            check.get("host", ""),
+            port=int(check.get("port", 443)),
+            timeout=float(check.get("timeout", 5)),
+        )
+        passed = r["ok"]
+        detail = f"ok ({r['ms']}ms)" if r["ok"] else (r["error"] or "unreachable")
+    else:
+        result = run(check["cmd"], timeout=check.get("timeout", 30))
+        passed = _passes(check.get("pass"), result)
+        detail = result["stdout"] or result["stderr"]
     prefix = f"[{agent_id}] " if agent_id else ""
     if not quiet:
         mark = "PASS" if passed else "FAIL"
@@ -268,7 +280,7 @@ def _run_one_check(
         "name": check["name"],
         "status": "PASS" if passed else "FAIL",
         "detail": detail,
-        "exit": result["exit"],
+        "exit": 0 if passed else 1,
         "agent": agent_id,
     }
 

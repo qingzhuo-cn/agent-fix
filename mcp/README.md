@@ -18,7 +18,7 @@ network exposure.
 | `fix_check` | run diagnostics for one issue (`issue_id`) |
 | `fix_apply` | apply fixes for one issue, then verify |
 | `fix_info` | print the knowledge-base doc for an issue |
-| `net_diagnose` | TCP connectivity + latency to every agent API endpoint; proxy env |
+| `net_diagnose` | TCP connectivity + latency to every agent API endpoint; proxy env (same engine as `fix check net-connectivity`) |
 | `version_check` | installed vs latest version for every detected agent |
 | `config_audit` | config parse errors + leaked API keys (masked) |
 | `log_triage` | recent ERROR/WARN lines from agent logs |

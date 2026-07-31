@@ -39,6 +39,11 @@ starts checking it automatically. `agent-broken-generic` is the dynamic issue th
 verifies `--version` for every detected agent and repairs npm-installed agents by
 re-running their postinstall/install script.
 
+`net-connectivity` uses the shared `scripts/netcheck.py` engine (hard-timeout TCP
+checks via non-blocking connect + select, so unreachable hosts cost exactly the
+timeout, not ~30s of Windows SYN retries). The MCP `net_diagnose` tool calls the
+same engine.
+
 `fix check` and `fix auto` exit non-zero when something is broken, so they drop
 straight into scripts:
 

@@ -151,6 +151,7 @@ $ fix apply npm-postinstall-skipped --yes
 | `npm-registry-mirror` | npm install/upgrade slow or unreachable | all npm agents | [doc](fixes/npm-registry.md) |
 | `agent-auth-broken` | "Not logged in" / expired OAuth / missing key | claude-code, codex, kimi-code, pi | [doc](fixes/agent-auth.md) |
 | `deepseek-provider` | point any agent at the DeepSeek API (deepseek-chat / deepseek-reasoner) | claude-code, codex, opencode, hermes, kimi-code, pi, zcode | [doc](fixes/deepseek-provider.md) |
+| `net-connectivity` | agent API endpoints unreachable (TCP/DNS/proxy layer under all agents) | all (network layer) | [doc](fixes/net-connectivity.md) |
 
 Per-agent deep dives: [Kimi Code](fixes/kimi-code.md) · [Pi](fixes/pi.md) · [ZCode](fixes/zcode.md)
 
