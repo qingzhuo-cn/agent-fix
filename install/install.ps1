@@ -70,6 +70,27 @@ if (Test-Path (Join-Path $HomeD ".config\opencode")) {
     Write-Host "[agent-fix] OpenCode not detected (.config\opencode missing), skipped" -ForegroundColor Yellow
 }
 
+if (Test-Path (Join-Path $HomeD ".codex")) {
+    Install-Skill (Join-Path $HomeD ".codex\skills\$Name")
+} else {
+    Write-Host "[agent-fix] Codex not detected (.codex missing), skipped" -ForegroundColor Yellow
+}
+
+if (Test-Path (Join-Path $HomeD ".kimi-code")) {
+    Install-Skill (Join-Path $HomeD ".kimi-code\skills\$Name")
+} else {
+    Write-Host "[agent-fix] Kimi Code not detected (.kimi-code missing), skipped" -ForegroundColor Yellow
+}
+
+if (Test-Path (Join-Path $HomeD ".pi")) {
+    Install-Skill (Join-Path $HomeD ".pi\agent\skills\$Name")
+} else {
+    Write-Host "[agent-fix] Pi not detected (.pi missing), skipped" -ForegroundColor Yellow
+}
+
+# shared skills dir used by ZCode and others — always install
+Install-Skill (Join-Path $HomeD ".agents\skills\$Name")
+
 # --- AGENTS.md hooks (Codex, OpenCode) ---
 Install-AgentsMdHook (Join-Path $HomeD ".codex\AGENTS.md")
 Install-AgentsMdHook (Join-Path $HomeD ".config\opencode\AGENTS.md")

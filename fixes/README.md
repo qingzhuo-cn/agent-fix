@@ -11,11 +11,22 @@ Hermes, Cursor, …) can read it directly. The same content is mirrored in
 | ID | Problem | Affected agents | Doc |
 |----|---------|-----------------|-----|
 | `npm-postinstall-skipped` | npm `ignore-scripts` / `--ignore-scripts` skips postinstall → native binary missing | claude-code, opencode, codex, any npm CLI | [npm-postinstall.md](npm-postinstall.md) |
-| `gui-path-blind` | GUI apps (CC-Switch, VS Code, launchers) can't find agent binaries that only exist in shell PATH | all agents, CC-Switch | [gui-path.md](gui-path.md) |
-| `node-version-too-old` | Node too old for the agent's engine requirement → CLI crashes at startup | claude-code, codex, opencode | [node-version.md](node-version.md) |
+| `agent-broken-generic` | any installed agent binary fails (postinstall / native binary / missing) — **dynamic, checks every detected agent** | all (registry-driven) | [agent-matrix.md](agent-matrix.md) |
+| `gui-path-blind` | GUI apps (CC-Switch, ZCode Desktop, launchers) can't find agent binaries that only exist in shell PATH | all agents, CC-Switch | [gui-path.md](gui-path.md) |
+| `node-version-too-old` | Node too old for the agent's engine requirement → CLI crashes at startup | claude-code, codex, opencode, pi | [node-version.md](node-version.md) |
 | `npm-registry-mirror` | npm install/upgrade slow or fails (network / mirror issues) | all npm-installed agents | [npm-registry.md](npm-registry.md) |
-| `agent-auth-broken` | "Not logged in" / expired OAuth / missing API key | claude-code, codex | [agent-auth.md](agent-auth.md) |
-| `deepseek-provider` | Point any agent at the DeepSeek API (Anthropic- or OpenAI-compatible endpoints) | claude-code, codex, opencode, hermes | [deepseek-provider.md](deepseek-provider.md) |
+| `agent-auth-broken` | "Not logged in" / expired OAuth / missing API key | claude-code, codex, kimi-code, pi | [agent-auth.md](agent-auth.md) |
+| `deepseek-provider` | Point any agent at the DeepSeek API (Anthropic- or OpenAI-compatible endpoints) | claude-code, codex, opencode, hermes, kimi-code, pi, zcode | [deepseek-provider.md](deepseek-provider.md) |
+
+## Per-agent deep dives
+
+| Agent | Doc |
+|-------|-----|
+| Claude Code / Codex / OpenCode / Hermes | covered across the catalog |
+| Kimi Code (`kimi`) | [kimi-code.md](kimi-code.md) |
+| Pi (`@earendil-works/pi-coding-agent`) | [pi.md](pi.md) |
+| ZCode (`zcode`) | [zcode.md](zcode.md) |
+| Full agent matrix (all registry agents, install paths, skills dirs) | [agent-matrix.md](agent-matrix.md) |
 
 ## How to use
 

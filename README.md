@@ -6,9 +6,10 @@
 
 # agent-fix ![Awesome](https://cdn.rawgit.com/sindresorhus/awesome/d7305f38d29fed78fa85652e3a63e154dd8e8829/media/badge.svg)
 
-**Universal repair skill &amp; CLI for AI coding agents** — fix Claude Code, Codex,
-OpenCode, Hermes, Cursor and any npm-distributed CLI with one skill, in the terminal,
-from a program, or from inside another agent.
+**Universal repair skill &amp; CLI for ALL AI coding agents** — fix Claude Code,
+Codex, OpenCode, Hermes, Kimi Code, Pi, ZCode, Cursor, Gemini CLI, Aider, Qwen
+Code and any npm-distributed CLI with one skill, in the terminal, from a program,
+or from inside another agent.
 
 English / [简体中文](README_cn.md)
 
@@ -58,8 +59,8 @@ command. This skill makes that repair one command: `fix apply npm-postinstall-sk
 
 ## Features
 
-- 🔧 **6 issue classes, 1 command** — `fix doctor` checks everything; `fix apply <id>` repairs and verifies
-- 🤖 **Multi-agent** — works with Claude Code, Codex, OpenCode, Hermes, Cursor, and any npm CLI
+- 🔧 **7 issue classes, 1 command** — `fix doctor` checks everything; `fix apply <id>` repairs and verifies
+- 🤖 **Every agent, registry-driven** — an agent registry in `catalog.json` covers Claude Code, Codex, OpenCode, Hermes, Kimi Code, Pi, ZCode, Cursor, Gemini CLI, Aider, Qwen Code, Amp, Droid + any npm CLI; `fix doctor` checks **every agent installed on your machine**, not just the big four. New agents = one line of data, no code
 - 🖥️ **Cross-platform** — Windows (incl. Git Bash & WSL-aware), macOS, Linux
 - 🧩 **Skill + CLI + API** — loadable as a skill by agents, callable from a terminal, or importable as a Python module
 - 📦 **Zero dependencies** — pure Python 3.8+ stdlib
@@ -93,7 +94,8 @@ falls back to cmd.exe for npm/node/registry checks).
 | Command | What it does | Exit code |
 |---------|--------------|-----------|
 | `fix list` | list every known issue | 0 |
-| `fix check` | run all diagnostics | 0 healthy / 1 broken |
+| `fix agents` | list the agent registry and which agents are installed | 0 |
+| `fix check` | run all diagnostics (incl. per-agent binary checks) | 0 healthy / 1 broken |
 | `fix check <id>...` | run diagnostics for specific issues | 0 / 1 |
 | `fix doctor` | alias for `fix check` | 0 / 1 |
 | `fix apply <id> [--yes]` | apply fixes for one issue, then verify | 0 verified |
@@ -124,21 +126,31 @@ $ fix apply npm-postinstall-skipped --yes
 |-------|-------------|--------------|--------------|
 | Hermes | `SKILL.md` | `~/.local/share/hermes/skills/agent-fix/` (Win: `%LOCALAPPDATA%\hermes\skills\agent-fix\`) | ✅ |
 | Claude Code | `SKILL.md` | `~/.claude/skills/agent-fix/` | ✅ |
+| Codex CLI | `SKILL.md` + `AGENTS.md` | `~/.codex/skills/agent-fix/` | ✅ |
 | OpenCode | `SKILL.md` + `AGENTS.md` | `~/.config/opencode/skill/agent-fix/` | ✅ |
-| Codex | `AGENTS.md` hook | `~/.codex/AGENTS.md` | ✅ |
-| Cursor & others | `AGENTS.md` | repo root | ✅ |
+| Kimi Code | `SKILL.md` (auto-discovered) | `~/.kimi-code/skills/agent-fix/` | ✅ |
+| Pi | `SKILL.md` | `~/.pi/agent/skills/agent-fix/` | ✅ |
+| ZCode & shared | `SKILL.md` | `~/.agents/skills/agent-fix/` | ✅ |
+| Cursor, others | `AGENTS.md` | repo root | ✅ |
 | Any npm CLI | `fix` CLI | `~/bin/fix` | n/a |
+
+> All 13 registry agents (incl. Gemini CLI, Aider, Qwen Code, Amp, Droid) are
+> detected and health-checked by `fix doctor` even when the skill itself isn't
+> installed — see [fixes/agent-matrix.md](fixes/agent-matrix.md).
 
 ### Issue catalog
 
 | ID | Problem | Affected agents | Doc |
 |----|---------|-----------------|-----|
-| `npm-postinstall-skipped` | npm `ignore-scripts`/`--ignore-scripts` skips postinstall → native binary missing | claude-code, opencode, codex, any npm CLI | [doc](fixes/npm-postinstall.md) |
-| `gui-path-blind` | GUI apps (CC-Switch etc.) can't see agent binaries (registry PATH) | all agents, CC-Switch | [doc](fixes/gui-path.md) |
-| `node-version-too-old` | Node too old for the agent's engines → startup crash | claude-code, codex, opencode | [doc](fixes/node-version.md) |
+| `agent-broken-generic` | ANY detected agent's binary fails (dynamic check, registry-driven) | all | [doc](fixes/agent-matrix.md) |
+| `npm-postinstall-skipped` | npm `ignore-scripts`/`--ignore-scripts` skips postinstall → native binary missing | claude-code, opencode, codex, pi, any npm CLI | [doc](fixes/npm-postinstall.md) |
+| `gui-path-blind` | GUI apps (CC-Switch, ZCode Desktop etc.) can't see agent binaries (registry PATH) | all agents, CC-Switch | [doc](fixes/gui-path.md) |
+| `node-version-too-old` | Node too old for the agent's engines → startup crash | claude-code, codex, opencode, pi | [doc](fixes/node-version.md) |
 | `npm-registry-mirror` | npm install/upgrade slow or unreachable | all npm agents | [doc](fixes/npm-registry.md) |
-| `agent-auth-broken` | "Not logged in" / expired OAuth / missing key | claude-code, codex | [doc](fixes/agent-auth.md) |
-| `deepseek-provider` | point any agent at the DeepSeek API (deepseek-chat / deepseek-reasoner) | claude-code, codex, opencode, hermes | [doc](fixes/deepseek-provider.md) |
+| `agent-auth-broken` | "Not logged in" / expired OAuth / missing key | claude-code, codex, kimi-code, pi | [doc](fixes/agent-auth.md) |
+| `deepseek-provider` | point any agent at the DeepSeek API (deepseek-chat / deepseek-reasoner) | claude-code, codex, opencode, hermes, kimi-code, pi, zcode | [doc](fixes/deepseek-provider.md) |
+
+Per-agent deep dives: [Kimi Code](fixes/kimi-code.md) · [Pi](fixes/pi.md) · [ZCode](fixes/zcode.md)
 
 ### Use it from your programs
 

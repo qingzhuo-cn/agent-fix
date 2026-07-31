@@ -158,38 +158,119 @@ def find_issue(catalog: Dict[str, Any], issue_id: str) -> Optional[Dict[str, Any
     return None
 
 
+# ---------------------------------------------------------------- agents
+
+
+def _expand(template: Optional[str], agent: Dict[str, Any]) -> Optional[str]:
+    """Replace {name}/{bin}/{npm_pkg} placeholders in a catalog string."""
+    if not template:
+        return template
+    return (
+        template.replace("{name}", agent.get("name", agent.get("id", "agent")))
+        .replace("{bin}", (agent.get("bin") or ["agent"])[0])
+        .replace("{npm_pkg}", agent.get("npm_pkg") or "")
+    )
+
+
+def detect_agents(catalog: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Return registry entries actually installed on this machine.
+
+    Detection: any candidate bin found on PATH, OR the agent's config dir exists.
+    """
+    detected = []
+    for aid, info in catalog.get("agents", {}).items():
+        exe = None
+        for b in info.get("bin", []):
+            found = shutil.which(b)
+            if found:
+                exe = found
+                break
+        cfg_exists = bool(info.get("config")) and Path(info["config"]).expanduser().exists()
+        if exe or cfg_exists:
+            detected.append({"id": aid, **info, "exe": exe})
+    return detected
+
+
+def cmd_agents(catalog: Dict[str, Any], args: argparse.Namespace) -> int:
+    print(f"agent registry: {len(catalog.get('agents', {}))} known agents\n")
+    print(f"{'AGENT':<28} {'BIN':<22} {'NPM PKG':<30} STATUS")
+    print("-" * 108)
+    for aid, info in catalog.get("agents", {}).items():
+        bins = ", ".join(info.get("bin", []))
+        npm = info.get("npm_pkg") or "-"
+        exe = None
+        for b in info.get("bin", []):
+            exe = shutil.which(b)
+            if exe:
+                break
+        if exe:
+            status = f"INSTALLED ({exe})"
+        elif info.get("config") and Path(info["config"]).expanduser().exists():
+            status = "config-dir present"
+        else:
+            status = "not detected"
+        print(f"{info.get('name','?'):<28} {bins:<22} {npm:<30} {status}")
+    return 0
+
+
 # ---------------------------------------------------------------- checks
 
 
-def check_issue(issue: Dict[str, Any], quiet: bool = False) -> Dict[str, Any]:
-    """Run all checks for one issue. Returns {id, results: [...], broken: bool}."""
+def check_issue(
+    issue: Dict[str, Any],
+    quiet: bool = False,
+    agents: Optional[List[Dict[str, Any]]] = None,
+) -> Dict[str, Any]:
+    """Run all checks for one issue. Dynamic issues expand per detected agent.
+
+    Returns {id, title, results: [...], broken: bool}.
+    """
     results = []
-    for check in issue.get("checks", []):
-        platform = check.get("platform")
-        if platform == "windows" and not _is_windows():
-            results.append({"name": check["name"], "status": "SKIP", "detail": "windows-only", "exit": None})
-            continue
-        if platform == "posix" and _is_windows():
-            results.append({"name": check["name"], "status": "SKIP", "detail": "posix-only", "exit": None})
-            continue
-        result = run(check["cmd"], timeout=check.get("timeout", 30))
-        passed = _passes(check.get("pass"), result)
-        detail = result["stdout"] or result["stderr"]
-        if not quiet:
-            mark = "PASS" if passed else "FAIL"
-            print(f"    [{mark}] {check['name']}")
-            if detail and not passed:
-                print(f"          {detail}")
-        results.append(
-            {
-                "name": check["name"],
-                "status": "PASS" if passed else "FAIL",
-                "detail": detail,
-                "exit": result["exit"],
-            }
-        )
+    if issue.get("dynamic"):
+        detected = agents or []
+        if not detected:
+            if not quiet:
+                print("    [SKIP] no agents detected on this machine")
+            return {"id": issue["id"], "title": issue["title"], "results": [], "broken": False}
+        for agent in detected:
+            for check_t in issue.get("checks", []):
+                check = {k: v for k, v in check_t.items()}
+                check["name"] = _expand(check.get("name", ""), agent)
+                check["cmd"] = _expand(check.get("cmd", ""), agent)
+                results.append(_run_one_check(check, quiet, agent.get("id")))
+    else:
+        for check in issue.get("checks", []):
+            results.append(_run_one_check(check, quiet))
     broken = any(r["status"] == "FAIL" for r in results)
     return {"id": issue["id"], "title": issue["title"], "results": results, "broken": broken}
+
+
+def _run_one_check(
+    check: Dict[str, Any],
+    quiet: bool = False,
+    agent_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    platform = check.get("platform")
+    if platform == "windows" and not _is_windows():
+        return {"name": check["name"], "status": "SKIP", "detail": "windows-only", "exit": None, "agent": agent_id}
+    if platform == "posix" and _is_windows():
+        return {"name": check["name"], "status": "SKIP", "detail": "posix-only", "exit": None, "agent": agent_id}
+    result = run(check["cmd"], timeout=check.get("timeout", 30))
+    passed = _passes(check.get("pass"), result)
+    detail = result["stdout"] or result["stderr"]
+    prefix = f"[{agent_id}] " if agent_id else ""
+    if not quiet:
+        mark = "PASS" if passed else "FAIL"
+        print(f"    [{mark}] {prefix}{check['name']}")
+        if detail and not passed:
+            print(f"          {detail[:400]}")
+    return {
+        "name": check["name"],
+        "status": "PASS" if passed else "FAIL",
+        "detail": detail,
+        "exit": result["exit"],
+        "agent": agent_id,
+    }
 
 
 # ---------------------------------------------------------------- fixes
@@ -199,13 +280,33 @@ def apply_issue(
     issue: Dict[str, Any],
     yes: bool = False,
     quiet: bool = False,
+    agents: Optional[List[Dict[str, Any]]] = None,
 ) -> Dict[str, Any]:
     """Apply the fixes for one issue, then run verify commands.
+
+    Dynamic issues expand per detected agent ({name}/{bin}/{npm_pkg} templates).
 
     Returns {id, fixed: [...], skipped: [...], verified: bool}.
     """
     fixed, skipped = [], []
-    for fix in issue.get("fixes", []):
+    fix_specs = []
+    if issue.get("dynamic"):
+        detected = agents or []
+        if not detected:
+            print("    [SKIP] no agents detected on this machine")
+        for agent in detected:
+            for fix_t in issue.get("fixes", []):
+                fix = {k: v for k, v in fix_t.items()}
+                fix["name"] = _expand(fix.get("name", ""), agent)
+                fix["cmd"] = _expand(fix.get("cmd", ""), agent)
+                if fix.get("cwd"):
+                    fix["cwd"] = _expand(fix.get("cwd", ""), agent)
+                fix["_agent"] = agent
+                fix_specs.append(fix)
+    else:
+        fix_specs = list(issue.get("fixes", []))
+
+    for fix in fix_specs:
         platform = fix.get("platform")
         if platform == "windows" and not _is_windows():
             skipped.append({"name": fix["name"], "reason": "windows-only"})
@@ -219,7 +320,15 @@ def apply_issue(
                 print(f"    [SKIP] {fix['name']} (manual)")
                 print(f"          {fix['cmd'].replace(chr(10), ' ')[:200]}")
             continue
-        cwd = resolve_cwd(fix.get("cwd", "")) if fix.get("cwd") else None
+        # npm-scoped fix but the agent is not npm-installed -> skip with a clear reason
+        cwd_tpl = fix.get("cwd") or ""
+        agent = fix.get("_agent")
+        if "{npm_pkg}" in cwd_tpl and (not agent or not agent.get("npm_pkg")):
+            skipped.append({"name": fix["name"], "reason": "agent is not npm-installed (native/desktop)"})
+            if not quiet:
+                print(f"    [SKIP] {fix['name']} (not npm-installed)")
+            continue
+        cwd = resolve_cwd(fix["cwd"]) if fix.get("cwd") else None
         if fix.get("cwd") and cwd is not None and not cwd.exists():
             skipped.append({"name": fix["name"], "reason": f"dir not found: {cwd}"})
             if not quiet:
@@ -248,33 +357,47 @@ def apply_issue(
 
     # verify
     verified = True
-    for v in issue.get("verify", []):
-        platform = v.get("platform")
-        if platform == "windows" and not _is_windows():
-            continue
-        if platform == "posix" and _is_windows():
-            continue
-        result = run(v["cmd"], timeout=v.get("timeout", 60))
-        ok = result["ok"] and ("STILL-MISSING" not in result["stdout"])
-        if not ok:
-            verified = False
-        if not quiet:
-            print(f"    [VERIFY{' OK' if ok else ' FAIL'}] {v['name']}")
-            if result["stdout"]:
-                print(f"          {result['stdout'][:300]}")
+    if issue.get("dynamic") and agents:
+        for agent in agents:
+            for v_t in issue.get("verify", []):
+                v = {k: vv for k, vv in v_t.items()}
+                v["name"] = _expand(v.get("name", ""), agent)
+                v["cmd"] = _expand(v.get("cmd", ""), agent)
+                verified = _run_one_verify(v, verified)
+    else:
+        for v in issue.get("verify", []):
+            verified = _run_one_verify(v, verified)
     return {"id": issue["id"], "fixed": fixed, "skipped": skipped, "verified": verified}
+
+
+def _run_one_verify(v: Dict[str, Any], verified: bool, quiet: bool = False) -> bool:
+    platform = v.get("platform")
+    if platform == "windows" and not _is_windows():
+        return verified
+    if platform == "posix" and _is_windows():
+        return verified
+    result = run(v["cmd"], timeout=v.get("timeout", 60))
+    ok = result["ok"] and ("STILL-MISSING" not in result["stdout"])
+    if not ok:
+        verified = False
+    if not quiet:
+        print(f"    [VERIFY{' OK' if ok else ' FAIL'}] {v['name']}")
+        if result["stdout"]:
+            print(f"          {result['stdout'][:300]}")
+    return verified
 
 
 def auto_fix(catalog: Dict[str, Any], quiet: bool = False) -> Dict[str, Any]:
     """Check every issue; auto-apply fixes for broken ones. Watchdog/cron mode."""
+    agents = detect_agents(catalog)
     report = {"checked": [], "fixed": [], "unfixed": []}
     for issue in catalog["issues"]:
         print(f"\n== {issue['id']}: {issue['title']}")
-        state = check_issue(issue, quiet=quiet)
+        state = check_issue(issue, quiet=quiet, agents=agents)
         report["checked"].append({"id": issue["id"], "broken": state["broken"]})
         if state["broken"]:
             print("   -> broken, applying fixes...")
-            outcome = apply_issue(issue, yes=True, quiet=quiet)
+            outcome = apply_issue(issue, yes=True, quiet=quiet, agents=agents)
             if outcome["verified"]:
                 report["fixed"].append(issue["id"])
                 print("   -> verified OK")
@@ -302,6 +425,7 @@ def cmd_list(catalog: Dict[str, Any], args: argparse.Namespace) -> int:
 
 def cmd_check(catalog: Dict[str, Any], args: argparse.Namespace) -> int:
     ids = args.ids or [i["id"] for i in catalog["issues"]]
+    agents = detect_agents(catalog)
     any_broken = False
     for issue_id in ids:
         issue = find_issue(catalog, issue_id)
@@ -309,7 +433,7 @@ def cmd_check(catalog: Dict[str, Any], args: argparse.Namespace) -> int:
             print(f"unknown issue: {issue_id}", file=sys.stderr)
             return 2
         print(f"== {issue['id']}: {issue['title']}")
-        state = check_issue(issue)
+        state = check_issue(issue, agents=agents)
         if state["broken"]:
             any_broken = True
             print(f"   -> BROKEN. Fix with: fix apply {issue['id']} --yes")
@@ -325,9 +449,10 @@ def cmd_apply(catalog: Dict[str, Any], args: argparse.Namespace) -> int:
     if not issue:
         print(f"unknown issue: {args.id}", file=sys.stderr)
         return 2
+    agents = detect_agents(catalog)
     print(f"== {issue['id']}: {issue['title']}")
     print(f"   doc: {issue.get('doc', 'n/a')}")
-    outcome = apply_issue(issue, yes=args.yes)
+    outcome = apply_issue(issue, yes=args.yes, agents=agents)
     if args.json:
         print(json.dumps(outcome, indent=2))
     if outcome["verified"]:
@@ -361,6 +486,8 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     p_list = sub.add_parser("list", help="list known issues")
     _json_opt(p_list)
+    p_agents = sub.add_parser("agents", help="list known agents and which are installed")
+    _json_opt(p_agents)
     p_check = sub.add_parser("check", help="run diagnostics for issues (default: all)")
     _json_opt(p_check)
     p_check.add_argument("ids", nargs="*", help="issue ids, e.g. npm-postinstall-skipped")
@@ -385,6 +512,8 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     if args.command == "list":
         return cmd_list(catalog, args)
+    if args.command == "agents":
+        return cmd_agents(catalog, args)
     if args.command == "check":
         return cmd_check(catalog, args)
     if args.command == "doctor":

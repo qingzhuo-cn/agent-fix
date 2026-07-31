@@ -24,13 +24,20 @@ ln -s "$(pwd)/scripts/fix" ~/.local/bin/fix   # or add scripts/ to PATH
 | Command | What it does | Exit code |
 |---------|--------------|-----------|
 | `fix list` | list every known issue in the catalog | 0 |
-| `fix check` | run all diagnostics | 0 healthy / 1 broken |
+| `fix agents` | list the agent registry and which agents are installed | 0 |
+| `fix check` | run all diagnostics (including per-agent binary checks) | 0 healthy / 1 broken |
 | `fix check <id> [<id>...]` | run diagnostics for specific issues | 0 / 1 |
 | `fix doctor` | alias for `fix check` | 0 / 1 |
 | `fix apply <id> [--yes]` | apply fixes for one issue, then verify | 0 verified |
 | `fix auto` | check all → auto-apply fixes for broken ones (watchdog mode) | 0 all fixed |
 | `fix info <id>` | print the matching doc from `../fixes/` | 0 |
 | `fix --json ...` | machine-readable output on supported commands | — |
+
+The catalog ships an **agent registry** (`catalog.json` → `agents`): add an agent
+as one line of data (bin, config home, skills dir, npm package) and `fix doctor`
+starts checking it automatically. `agent-broken-generic` is the dynamic issue that
+verifies `--version` for every detected agent and repairs npm-installed agents by
+re-running their postinstall/install script.
 
 `fix check` and `fix auto` exit non-zero when something is broken, so they drop
 straight into scripts:

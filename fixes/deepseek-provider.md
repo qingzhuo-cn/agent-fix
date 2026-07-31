@@ -1,8 +1,9 @@
 # Point any agent at the DeepSeek API
 
 - **ID:** `deepseek-provider`
-- **Affects:** `claude-code`, `codex`, `opencode`, `hermes`, and any OpenAI- or
-  Anthropic-compatible client. Get a key at <https://platform.deepseek.com/>.
+- **Affects:** `claude-code`, `codex`, `opencode`, `hermes`, `kimi-code`, `pi`,
+  `zcode`, and any OpenAI- or Anthropic-compatible client. Get a key at
+  <https://platform.deepseek.com/>.
 - **Tags:** `deepseek`, `provider`, `api-key`, `base-url`
 
 ## Symptom
@@ -96,6 +97,41 @@ or in `~/.config/opencode/opencode.json`:
 hermes config set provider deepseek   # or the provider name you configured
 hermes config set model deepseek-chat
 # keys go in the provider config / .env, e.g. DEEPSEEK_API_KEY=sk-...
+```
+
+### Kimi Code
+
+```toml
+# ~/.kimi-code/config.toml
+[provider.deepseek]
+base_url = "https://api.deepseek.com"
+api_key = "sk-<your-deepseek-key>"
+
+[model.deepseek-chat]
+provider = "deepseek"
+```
+
+```bash
+export KIMI_API_KEY="sk-<your-deepseek-key>"
+kimi -m deepseek-chat "hello"
+```
+
+### Pi (pi-coding-agent)
+
+```bash
+export OPENAI_BASE_URL="https://api.deepseek.com"
+export OPENAI_API_KEY="sk-<your-deepseek-key>"
+# or Anthropic-compatible: ANTHROPIC_BASE_URL=https://api.deepseek.com/anthropic
+```
+
+### ZCode
+
+OpenAI-compatible custom provider in the app settings (or env):
+
+```text
+Base URL: https://api.deepseek.com
+API key:  sk-<your-deepseek-key>
+Model:    deepseek-chat / deepseek-reasoner
 ```
 
 ## Verify

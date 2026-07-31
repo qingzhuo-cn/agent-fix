@@ -7,8 +7,9 @@
 # agent-fix ![Awesome](https://cdn.rawgit.com/sindresorhus/awesome/d7305f38d29fed78fa85652e3a63e154dd8e8829/media/badge.svg)
 
 **AI 编程 Agent 通用修复技能（skill）与命令行工具** —— 用一套技能修复 Claude Code、
-Codex、OpenCode、Hermes、Cursor 以及任何 npm 分发的 CLI：既可以在终端里用，也可以
-在程序里调用，还可以被其它 Agent 直接加载使用。
+Codex、OpenCode、Hermes、Kimi Code、Pi、ZCode、Cursor、Gemini CLI、Aider、Qwen Code
+以及任何 npm 分发的 CLI：既可以在终端里用，也可以在程序里调用，还可以被其它 Agent
+直接加载使用。
 
 [English](README.md) / 简体中文
 
@@ -56,8 +57,11 @@ AI 编程 Agent 通常通过 npm、图形切换工具（如 CC-Switch）、版�
 
 ## 特性
 
-- 🔧 **6 类问题，1 条命令** — `fix doctor` 全面体检；`fix apply <id>` 修复并验证
-- 🤖 **多 Agent 通用** — 支持 Claude Code、Codex、OpenCode、Hermes、Cursor 及任意 npm CLI
+- 🔧 **7 类问题，1 条命令** — `fix doctor` 全面体检；`fix apply <id>` 修复并验证
+- 🤖 **全 Agent 覆盖，注册表驱动** — `catalog.json` 内置 agent 注册表：Claude Code、
+  Codex、OpenCode、Hermes、Kimi Code、Pi、ZCode、Cursor、Gemini CLI、Aider、
+  Qwen Code、Amp、Droid + 任意 npm CLI；`fix doctor` 会检查**本机实际安装的每一个
+  agent**，而不只是四大主流。新增 agent = 一行数据，零代码
 - 🖥️ **跨平台** — Windows（含 Git Bash、WSL 兼容）、macOS、Linux
 - 🧩 **技能 + CLI + API 三合一** — 可作为 skill 被 Agent 加载，可在终端调用，也可作为 Python 模块导入
 - 📦 **零依赖** — 纯 Python 3.8+ 标准库
@@ -91,7 +95,8 @@ npm/node/registry 类检查回退到 cmd.exe）。
 | 命令 | 作用 | 退出码 |
 |------|------|--------|
 | `fix list` | 列出目录中的全部问题 | 0 |
-| `fix check` | 运行全部诊断 | 0 健康 / 1 有问题 |
+| `fix agents` | 列出 agent 注册表及本机已安装的 agent | 0 |
+| `fix check` | 运行全部诊断（含每个已装 agent 的二进制检查） | 0 健康 / 1 有问题 |
 | `fix check <id>...` | 只诊断指定问题 | 0 / 1 |
 | `fix doctor` | `fix check` 的别名 | 0 / 1 |
 | `fix apply <id> [--yes]` | 修复一个问题并验证 | 0 验证通过 |
@@ -122,21 +127,30 @@ $ fix apply npm-postinstall-skipped --yes
 |-------|---------|----------|----------|
 | Hermes | `SKILL.md` | `~/.local/share/hermes/skills/agent-fix/`（Win: `%LOCALAPPDATA%\hermes\skills\agent-fix\`） | ✅ |
 | Claude Code | `SKILL.md` | `~/.claude/skills/agent-fix/` | ✅ |
+| Codex CLI | `SKILL.md` + `AGENTS.md` | `~/.codex/skills/agent-fix/` | ✅ |
 | OpenCode | `SKILL.md` + `AGENTS.md` | `~/.config/opencode/skill/agent-fix/` | ✅ |
-| Codex | `AGENTS.md` 钩子 | `~/.codex/AGENTS.md` | ✅ |
+| Kimi Code | `SKILL.md`（自动发现） | `~/.kimi-code/skills/agent-fix/` | ✅ |
+| Pi | `SKILL.md` | `~/.pi/agent/skills/agent-fix/` | ✅ |
+| ZCode 及共享 | `SKILL.md` | `~/.agents/skills/agent-fix/` | ✅ |
 | Cursor 等 | `AGENTS.md` | 仓库根目录 | ✅ |
 | 任意 npm CLI | `fix` CLI | `~/bin/fix` | — |
+
+> 注册表里全部 13 个 agent（含 Gemini CLI、Aider、Qwen Code、Amp、Droid）即使没装
+> 本技能也会被 `fix doctor` 自动检测体检 —— 见 [fixes/agent-matrix.md](fixes/agent-matrix.md)。
 
 ### 问题目录
 
 | ID | 问题 | 受影响 Agent | 文档 |
 |----|------|-------------|------|
-| `npm-postinstall-skipped` | npm `ignore-scripts`/`--ignore-scripts` 跳过 postinstall → native binary 缺失 | claude-code, opencode, codex, 任意 npm CLI | [doc](fixes/npm-postinstall.md) |
-| `gui-path-blind` | GUI 程序（CC-Switch 等）看不到 Agent 可执行文件（注册表 PATH） | 全部 Agent、CC-Switch | [doc](fixes/gui-path.md) |
-| `node-version-too-old` | Node 版本过旧，Agent 启动即崩 | claude-code, codex, opencode | [doc](fixes/node-version.md) |
+| `agent-broken-generic` | 任意已装 agent 二进制无法运行（动态检查，注册表驱动） | 全部 | [doc](fixes/agent-matrix.md) |
+| `npm-postinstall-skipped` | npm `ignore-scripts`/`--ignore-scripts` 跳过 postinstall → native binary 缺失 | claude-code, opencode, codex, pi, 任意 npm CLI | [doc](fixes/npm-postinstall.md) |
+| `gui-path-blind` | GUI 程序（CC-Switch、ZCode Desktop 等）看不到 Agent 可执行文件（注册表 PATH） | 全部 Agent、CC-Switch | [doc](fixes/gui-path.md) |
+| `node-version-too-old` | Node 版本过旧，Agent 启动即崩 | claude-code, codex, opencode, pi | [doc](fixes/node-version.md) |
 | `npm-registry-mirror` | npm 安装/升级慢或不可达 | 全部 npm Agent | [doc](fixes/npm-registry.md) |
-| `agent-auth-broken` | 未登录 / OAuth 过期 / 缺少 API Key | claude-code, codex | [doc](fixes/agent-auth.md) |
-| `deepseek-provider` | 把任意 Agent 指向 DeepSeek API（deepseek-chat / deepseek-reasoner） | claude-code, codex, opencode, hermes | [doc](fixes/deepseek-provider.md) |
+| `agent-auth-broken` | 未登录 / OAuth 过期 / 缺少 API Key | claude-code, codex, kimi-code, pi | [doc](fixes/agent-auth.md) |
+| `deepseek-provider` | 把任意 Agent 指向 DeepSeek API（deepseek-chat / deepseek-reasoner） | claude-code, codex, opencode, hermes, kimi-code, pi, zcode | [doc](fixes/deepseek-provider.md) |
+
+Agent 专项文档：[Kimi Code](fixes/kimi-code.md) · [Pi](fixes/pi.md) · [ZCode](fixes/zcode.md)
 
 ### 在程序中调用
 

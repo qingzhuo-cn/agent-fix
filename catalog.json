@@ -1,7 +1,22 @@
 {
   "name": "agent-fix",
-  "version": "1.0.0",
-  "description": "Universal diagnostic/fix catalog for AI coding agents (Claude Code, Codex, OpenCode, Hermes, ...)",
+  "version": "1.1.0",
+  "description": "Universal diagnostic/fix catalog for ALL AI coding agents (Claude Code, Codex, OpenCode, Hermes, Kimi Code, Pi, ZCode, Cursor, ...)",
+  "agents": {
+    "claude-code":  { "name": "Claude Code",          "bin": ["claude"],            "config": "~/.claude",             "skills": "~/.claude/skills",        "npm_pkg": "@anthropic-ai/claude-code", "provider_env": ["ANTHROPIC_BASE_URL", "ANTHROPIC_AUTH_TOKEN"], "home": "https://docs.anthropic.com/claude-code" },
+    "codex":        { "name": "Codex CLI",             "bin": ["codex"],             "config": "~/.codex",              "skills": "~/.codex/skills",          "npm_pkg": "@openai/codex",            "provider_env": ["OPENAI_BASE_URL", "OPENAI_API_KEY"], "home": "https://github.com/openai/codex" },
+    "opencode":     { "name": "OpenCode",              "bin": ["opencode"],          "config": "~/.config/opencode",    "skills": "~/.config/opencode/skill",  "npm_pkg": "opencode-ai",              "provider_env": ["OPENAI_BASE_URL", "OPENAI_API_KEY"], "home": "https://opencode.ai" },
+    "hermes":       { "name": "Hermes Agent",          "bin": ["hermes"],            "config": "~/.local/share/hermes", "skills": "~/.local/share/hermes/skills", "npm_pkg": null,                       "provider_env": [], "home": "https://hermes-agent.nousresearch.com" },
+    "kimi-code":    { "name": "Kimi Code",             "bin": ["kimi"],              "config": "~/.kimi-code",          "skills": "~/.kimi-code/skills",      "npm_pkg": null,                       "provider_env": ["KIMI_API_KEY"], "home": "https://kimi.com/code" },
+    "pi":           { "name": "Pi (pi-coding-agent)",  "bin": ["pi"],                "config": "~/.pi",                 "skills": "~/.pi/agent/skills",       "npm_pkg": "@earendil-works/pi-coding-agent", "provider_env": ["OPENAI_API_KEY", "ANTHROPIC_API_KEY"], "home": "https://pi.dev" },
+    "zcode":        { "name": "ZCode",                 "bin": ["zcode"],             "config": "~/.zcode",              "skills": "~/.agents/skills",         "npm_pkg": null,                       "provider_env": [], "home": "https://zcode.ai" },
+    "cursor":       { "name": "Cursor",                "bin": ["cursor"],            "config": "~/.cursor",             "skills": "~/.cursor/skills",         "npm_pkg": null,                       "provider_env": [], "home": "https://cursor.com" },
+    "gemini":       { "name": "Gemini CLI",            "bin": ["gemini"],            "config": "~/.gemini",             "skills": null,                      "npm_pkg": "@google/gemini-cli",       "provider_env": ["GEMINI_API_KEY"], "home": "https://github.com/google-gemini/gemini-cli" },
+    "aider":        { "name": "Aider",                 "bin": ["aider"],             "config": "~/.config/aider",       "skills": null,                      "npm_pkg": null,                       "provider_env": ["OPENAI_API_KEY"], "home": "https://aider.chat" },
+    "qwen-code":    { "name": "Qwen Code",             "bin": ["qwen-code"],         "config": "~/.qwen-code",          "skills": null,                      "npm_pkg": "@qwen-code/qwen-code",     "provider_env": ["DASHSCOPE_API_KEY"], "home": "https://qwen.ai" },
+    "amp":          { "name": "Amp",                   "bin": ["amp"],               "config": "~/.config/amp",         "skills": "~/.config/amp/tools",      "npm_pkg": null,                       "provider_env": [], "home": "https://amp.dev" },
+    "droid":        { "name": "Droid",                 "bin": ["droid"],             "config": "~/.factory",            "skills": "~/.factory/skills",        "npm_pkg": null,                       "provider_env": [], "home": "https://getdroid.ai" }
+  },
   "issues": [
     {
       "id": "npm-postinstall-skipped",
@@ -213,6 +228,53 @@
         { "name": "model round-trip", "cmd": "echo 'Verify with a real model call: claude \"say hi\" --print'" }
       ],
       "doc": "fixes/deepseek-provider.md"
+    },
+    {
+      "id": "agent-broken-generic",
+      "title": "Any installed agent binary fails to run (postinstall / native binary / missing)",
+      "agents": ["all"],
+      "dynamic": true,
+      "symptoms": [
+        "any AI coding agent reports errors on --version after install/upgrade",
+        "GUI tools show any agent as 'installed but cannot run'"
+      ],
+      "checks": [
+        {
+          "name": "{name} binary runs",
+          "cmd": "{bin} --version 2>&1 || {bin} --help 2>&1 || true",
+          "pass": {
+            "stdout_not_contains": [
+              "postinstall script was not run",
+              "postinstall script has not been run",
+              "native binary not",
+              "native binary missing",
+              "not recognized",
+              "command not found",
+              "cannot run",
+              "internal/modules/cjs/loader",
+              "Cannot find module"
+            ]
+          }
+        }
+      ],
+      "fixes": [
+        {
+          "name": "Re-run {name} npm install/postinstall script",
+          "dynamic_agent": true,
+          "cwd": "npm_root/{npm_pkg}",
+          "cmd": "node -e \"const s=require('./package.json').scripts||{};const f=s.postinstall||s.install;if(!f){console.error('no install/postinstall script');process.exit(1)}console.log('running:',f);require('child_process').execSync(f,{stdio:'inherit'})\""
+        },
+        {
+          "name": "{name} is not npm-installed — reinstall or repair manually (see fixes/agent-matrix.md)",
+          "dynamic_agent": true,
+          "manual": true,
+          "cmd": "echo 'Manual step: consult fixes/agent-matrix.md for {name} install/config details'"
+        }
+      ],
+      "verify": [
+        { "name": "{name} --version", "cmd": "{bin} --version 2>&1 || true" }
+      ],
+      "doc": "fixes/agent-matrix.md"
     }
   ]
 }

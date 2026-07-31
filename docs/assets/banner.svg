@@ -38,21 +38,28 @@
 
   <!-- tag chips -->
   <g font-family="Consolas, monospace" font-size="15" font-weight="600">
-    <rect x="218" y="182" width="120" height="30" rx="15" fill="#0ea5e9" opacity="0.9"/>
-    <text x="278" y="202" text-anchor="middle" fill="#ffffff">Claude Code</text>
-    <rect x="350" y="182" width="86" height="30" rx="15" fill="#38bdf8" opacity="0.85"/>
-    <text x="393" y="202" text-anchor="middle" fill="#0c4a6e">Codex</text>
-    <rect x="448" y="182" width="100" height="30" rx="15" fill="#a78bfa" opacity="0.9"/>
-    <text x="498" y="202" text-anchor="middle" fill="#ffffff">OpenCode</text>
-    <rect x="560" y="182" width="96" height="30" rx="15" fill="#34d399" opacity="0.9"/>
-    <text x="608" y="202" text-anchor="middle" fill="#064e3b">Hermes</text>
-    <rect x="218" y="224" width="92" height="30" rx="15" fill="#f59e0b" opacity="0.9"/>
-    <text x="264" y="244" text-anchor="middle" fill="#451a03">npm CLI</text>
-    <rect x="322" y="224" width="110" height="30" rx="15" fill="#64748b" opacity="0.9"/>
-    <text x="377" y="244" text-anchor="middle" fill="#f8fafc">Windows</text>
-    <rect x="444" y="224" width="100" height="30" rx="15" fill="#64748b" opacity="0.9"/>
-    <text x="494" y="244" text-anchor="middle" fill="#f8fafc">macOS</text>
-    <rect x="556" y="224" width="90" height="30" rx="15" fill="#64748b" opacity="0.9"/>
-    <text x="601" y="244" text-anchor="middle" fill="#f8fafc">Linux</text>
+    <rect x="218" y="176" width="104" height="28" rx="14" fill="#0ea5e9" opacity="0.9"/>
+    <text x="270" y="195" text-anchor="middle" fill="#ffffff">Claude Code</text>
+    <rect x="334" y="176" width="72" height="28" rx="14" fill="#38bdf8" opacity="0.85"/>
+    <text x="370" y="195" text-anchor="middle" fill="#0c4a6e">Codex</text>
+    <rect x="418" y="176" width="94" height="28" rx="14" fill="#a78bfa" opacity="0.9"/>
+    <text x="465" y="195" text-anchor="middle" fill="#ffffff">OpenCode</text>
+    <rect x="524" y="176" width="86" height="28" rx="14" fill="#34d399" opacity="0.9"/>
+    <text x="567" y="195" text-anchor="middle" fill="#064e3b">Hermes</text>
+    <rect x="622" y="176" width="100" height="28" rx="14" fill="#f472b6" opacity="0.9"/>
+    <text x="672" y="195" text-anchor="middle" fill="#ffffff">Kimi Code</text>
+    <rect x="218" y="216" width="62" height="28" rx="14" fill="#22d3ee" opacity="0.9"/>
+    <text x="249" y="235" text-anchor="middle" fill="#083344">Pi</text>
+    <rect x="292" y="216" width="92" height="28" rx="14" fill="#fbbf24" opacity="0.9"/>
+    <text x="338" y="235" text-anchor="middle" fill="#451a03">ZCode</text>
+    <rect x="396" y="216" width="92" height="28" rx="14" fill="#f59e0b" opacity="0.9"/>
+    <text x="442" y="235" text-anchor="middle" fill="#451a03">npm CLI</text>
+    <rect x="500" y="216" width="100" height="28" rx="14" fill="#64748b" opacity="0.9"/>
+    <text x="550" y="235" text-anchor="middle" fill="#f8fafc">Windows</text>
+    <rect x="612" y="216" width="92" height="28" rx="14" fill="#64748b" opacity="0.9"/>
+    <text x="658" y="235" text-anchor="middle" fill="#f8fafc">macOS</text>
+    <rect x="716" y="216" width="84" height="28" rx="14" fill="#64748b" opacity="0.9"/>
+    <text x="758" y="235" text-anchor="middle" fill="#f8fafc">Linux</text>
+    <text x="218" y="266" font-family="Consolas, monospace" font-size="13" fill="#94a3b8">+ Aider · Amp · Cursor · Droid · Gemini CLI · Qwen Code · any npm CLI</text>
   </g>
 </svg>
