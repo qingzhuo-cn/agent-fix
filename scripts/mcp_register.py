@@ -52,6 +52,9 @@ def register_claude() -> str:
     claude = shutil.which("claude")
     if not claude:
         return "SKIP claude: not installed"
+    # `claude mcp add` with an existing name does NOT update the command path,
+    # so remove any stale registration first (harmless if absent).
+    _cmd([claude, "mcp", "remove", NAME])
     out = _cmd([claude, "mcp", "add", "--scope", "user", NAME, "--", _python(), SERVER_ARG])
     return f"claude: {out or 'registered (claude mcp add --scope user)'}"
 

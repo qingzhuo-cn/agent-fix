@@ -42,7 +42,7 @@ the user points it at this repo.
    | `node-version-too-old` | `EBADENGINE` / startup crash from old Node |
    | `npm-registry-mirror` | npm install/upgrade hangs or `ETIMEDOUT` / `ECONNRESET` |
    | `agent-auth-broken` | "Not logged in" / 401 / missing API key |
-   | `deepseek-provider` | point any agent (incl. Kimi Code / Pi / ZCode) at the DeepSeek API |
+   | `provider-config` | no provider configured — set key/base URL/model for ANY provider (DeepSeek/OpenAI/Anthropic/Google/Ollama/...) |
    | `net-connectivity` | API endpoints unreachable (TCP/DNS/proxy layer under all agents) |
 
 3. **Apply the fix.** `./scripts/fix apply <id> --yes` auto-applies; manual fixes

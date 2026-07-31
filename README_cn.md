@@ -30,7 +30,7 @@ Codex、OpenCode、Hermes、Kimi Code、Pi、ZCode、Cursor、Gemini CLI、Aider
   - [兼容性矩阵](#兼容性矩阵)
   - [问题目录](#问题目录)
   - [在程序中调用](#在程序中调用)
-  - [MCP server（任意 agent 可调用的 12 个工具）](#mcp-server任意-agent-可调用的-12-个工具)
+  - [MCP server（任意 agent 可调用的 13 个工具）](#mcp-server任意-agent-可调用的-13-个工具)
 - [工作原理](#工作原理)
 - [扩展目录](#扩展目录)
 - [常见问题 FAQ](#常见问题-faq)
@@ -65,7 +65,7 @@ AI 编程 Agent 通常通过 npm、图形切换工具（如 CC-Switch）、版�
   agent**，而不只是四大主流。新增 agent = 一行数据，零代码
 - 🖥️ **跨平台** — Windows（含 Git Bash、WSL 兼容）、macOS、Linux
 - 🧩 **技能 + CLI + API 三合一** — 可作为 skill 被 Agent 加载，可在终端调用，也可作为 Python 模块导入
-- ⚡ **MCP server** — 零依赖 stdio MCP server（`mcp/server.py`，12 个工具），让 Claude Code、OpenCode、Cursor、ZCode、Codex 把整个工具箱（`fix_doctor`、`net_diagnose`、`deepseek_setup`…）当原生工具直接调用
+- ⚡ **MCP server** — 零依赖 stdio MCP server（`mcp/server.py`，13 个工具），让 Claude Code、OpenCode、Cursor、ZCode、Codex 把整个工具箱（`fix_doctor`、`net_diagnose`、`provider_setup`…）当原生工具直接调用
 - 📦 **零依赖** — 纯 Python 3.8+ 标准库
 - 🔁 **可做看门狗** — `fix auto` 自动体检并自动修复；失败时非零退出，可直接挂 cron/CI
 - 🧪 **修复必验证** — 每个修复都以真实命令验证收尾，而不是只跑 `--version`
@@ -73,8 +73,8 @@ AI 编程 Agent 通常通过 npm、图形切换工具（如 CC-Switch）、版�
 ## 快速开始
 
 ```bash
-git clone https://github.com/qingzhuo-cn/agent-fix-skill.git
-cd agent-fix-skill
+git clone https://github.com/qingzhuo-cn/agent-fix.git
+cd agent-fix
 
 # 1) CLI —— 无需安装，直接可用
 ./scripts/fix doctor
@@ -150,7 +150,7 @@ $ fix apply npm-postinstall-skipped --yes
 | `node-version-too-old` | Node 版本过旧，Agent 启动即崩 | claude-code, codex, opencode, pi | [doc](fixes/node-version.md) |
 | `npm-registry-mirror` | npm 安装/升级慢或不可达 | 全部 npm Agent | [doc](fixes/npm-registry.md) |
 | `agent-auth-broken` | 未登录 / OAuth 过期 / 缺少 API Key | claude-code, codex, kimi-code, pi | [doc](fixes/agent-auth.md) |
-| `deepseek-provider` | 把任意 Agent 指向 DeepSeek API（deepseek-chat / deepseek-reasoner） | claude-code, codex, opencode, hermes, kimi-code, pi, zcode | [doc](fixes/deepseek-provider.md) |
+| `provider-config` | 未配置 provider —— 为任意 provider 设置 key/base URL/model（DeepSeek/OpenAI/Anthropic/Google/Ollama/...） | 全部 | [doc](fixes/provider-config.md) |
 | `net-connectivity` | Agent API 端点不可达（TCP/DNS/代理层，所有 agent 的底层依赖） | 全部（网络层） | [doc](fixes/net-connectivity.md) |
 
 Agent 专项文档：[Kimi Code](fixes/kimi-code.md) · [Pi](fixes/pi.md) · [ZCode](fixes/zcode.md)
@@ -180,7 +180,7 @@ out = subprocess.run(["fix", "check", "--json"], capture_output=True, text=True)
 report = json.loads(out.stdout)
 ```
 
-### MCP server（任意 agent 可调用的 12 个工具）
+### MCP server（任意 agent 可调用的 13 个工具）
 
 同一套工具箱以 MCP server 形式暴露，**任何支持 MCP 的 agent**（Claude Code、
 OpenCode、Cursor、ZCode、Codex）都能把它当原生工具调用：
@@ -188,7 +188,7 @@ OpenCode、Cursor、ZCode、Codex）都能把它当原生工具调用：
 | 分组 | 工具 |
 |------|------|
 | 核心审查/修复 | `fix_agents`、`fix_doctor`、`fix_check`、`fix_apply`、`fix_info` |
-| 小分支技能 | `net_diagnose`（端点延迟+代理）、`version_check`、`config_audit`（解析错误+泄露密钥）、`log_triage`、`backup_configs`、`restore_configs`、`deepseek_setup` |
+| 小分支技能 | `net_diagnose`（端点延迟+代理）、`version_check`、`config_audit`（解析错误+泄露密钥）、`log_triage`、`backup_configs`、`restore_configs`、`provider_setup`（任意 provider）、`deepseek_setup`（快捷方式） |
 
 ```bash
 python scripts/mcp_register.py all        # 向所有已装 agent 注册

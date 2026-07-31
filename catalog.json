@@ -1,12 +1,12 @@
 {
   "name": "agent-fix",
-  "version": "1.3.0",
-  "description": "Universal diagnostic/fix catalog for ALL AI coding agents (Claude Code, Codex, OpenCode, Hermes, Kimi Code, Pi, ZCode, Cursor, ...) — plus MCP server, branch skills, and network diagnostics",
+  "version": "1.4.0",
+  "description": "Universal diagnostic/fix catalog for ALL AI coding agents (Claude Code, Codex, OpenCode, Hermes, Kimi Code, Pi, ZCode, Cursor, ...) — plus MCP server, branch skills, any-provider config, and network diagnostics",
   "agents": {
     "claude-code":  { "name": "Claude Code",          "bin": ["claude"],            "config": "~/.claude",             "skills": "~/.claude/skills",        "npm_pkg": "@anthropic-ai/claude-code", "provider_env": ["ANTHROPIC_BASE_URL", "ANTHROPIC_AUTH_TOKEN"], "home": "https://docs.anthropic.com/claude-code" },
     "codex":        { "name": "Codex CLI",             "bin": ["codex"],             "config": "~/.codex",              "skills": "~/.codex/skills",          "npm_pkg": "@openai/codex",            "provider_env": ["OPENAI_BASE_URL", "OPENAI_API_KEY"], "home": "https://github.com/openai/codex" },
     "opencode":     { "name": "OpenCode",              "bin": ["opencode"],          "config": "~/.config/opencode",    "skills": "~/.config/opencode/skill",  "npm_pkg": "opencode-ai",              "provider_env": ["OPENAI_BASE_URL", "OPENAI_API_KEY"], "home": "https://opencode.ai" },
-    "hermes":       { "name": "Hermes Agent",          "bin": ["hermes"],            "config": "~/.local/share/hermes", "skills": "~/.local/share/hermes/skills", "npm_pkg": null,                       "provider_env": [], "home": "https://hermes-agent.nousresearch.com" },
+    "hermes":       { "name": "Hermes Agent",          "bin": ["hermes"],            "config": "~/.local/share/hermes", "config_win": "$LOCALAPPDATA/hermes", "skills": "~/.local/share/hermes/skills", "npm_pkg": null,                       "provider_env": [], "home": "https://hermes-agent.nousresearch.com" },
     "kimi-code":    { "name": "Kimi Code",             "bin": ["kimi"],              "config": "~/.kimi-code",          "skills": "~/.kimi-code/skills",      "npm_pkg": null,                       "provider_env": ["KIMI_API_KEY"], "home": "https://kimi.com/code" },
     "pi":           { "name": "Pi (pi-coding-agent)",  "bin": ["pi"],                "config": "~/.pi",                 "skills": "~/.pi/agent/skills",       "npm_pkg": "@earendil-works/pi-coding-agent", "provider_env": ["OPENAI_API_KEY", "ANTHROPIC_API_KEY"], "home": "https://pi.dev" },
     "zcode":        { "name": "ZCode",                 "bin": ["zcode"],             "config": "~/.zcode",              "skills": "~/.agents/skills",         "npm_pkg": null,                       "provider_env": [], "home": "https://zcode.ai" },
@@ -203,31 +203,34 @@
       "doc": "fixes/agent-auth.md"
     },
     {
-      "id": "deepseek-provider",
-      "title": "Agent not pointed at DeepSeek API",
-      "agents": ["claude-code", "codex", "opencode", "hermes"],
+      "id": "provider-config",
+      "title": "Agent provider not configured (no API key / base URL / model)",
+      "agents": ["all"],
+      "dynamic": true,
       "symptoms": [
-        "want to run agents on DeepSeek models (deepseek-chat / deepseek-reasoner)",
-        "401 or 'model not found' after switching provider"
+        "agent starts but every prompt fails with 401 / 'model not found' / 'no provider'",
+        "user wants to switch an agent to ANY provider (DeepSeek, OpenAI, Anthropic, Google, Moonshot, Zhipu, Qwen, Ollama, OpenRouter, custom)",
+        "provider switcher (CC-Switch) left the agent with no valid credential"
       ],
       "checks": [
         {
-          "name": "a DeepSeek or Anthropic-compatible key is set",
-          "cmd": "env | grep -qE 'DEEPSEEK_API_KEY|ANTHROPIC_AUTH_TOKEN|ANTHROPIC_API_KEY|OPENAI_API_KEY' && echo SET || echo UNSET",
-          "pass": { "stdout_contains": ["SET"] }
+          "name": "{name}: provider configured (key env or config home)",
+          "cmd": "env | grep -qE '{keys}' && echo KEY-SET || { test -d {config} && echo CONFIG-OK || echo NO; }",
+          "pass": { "stdout_contains_any": ["KEY-SET", "CONFIG-OK"] }
         }
       ],
       "fixes": [
         {
-          "name": "Configure DeepSeek per agent (manual, see doc)",
+          "name": "Configure a provider for {name} (manual — any provider, see fixes/provider-config.md)",
+          "dynamic_agent": true,
           "manual": true,
-          "cmd": "echo 'Manual step: set ANTHROPIC_BASE_URL=https://api.deepseek.com/anthropic for Claude Code, OPENAI_BASE_URL=https://api.deepseek.com for Codex/OpenCode. See fixes/deepseek-provider.md'"
+          "cmd": "echo 'Manual step: set the provider key/base URL/model per fixes/provider-config.md, or use the MCP provider_setup tool for auto-generated snippets'"
         }
       ],
       "verify": [
-        { "name": "model round-trip", "cmd": "echo 'Verify with a real model call: claude \"say hi\" --print'" }
+        { "name": "{name}: provider configured", "cmd": "env | grep -qE '{keys}' && echo OK || { test -d {config} && echo OK || echo NO; }" }
       ],
-      "doc": "fixes/deepseek-provider.md"
+      "doc": "fixes/provider-config.md"
     },
     {
       "id": "agent-broken-generic",

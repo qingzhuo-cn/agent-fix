@@ -24,12 +24,13 @@ network exposure.
 | `log_triage` | recent ERROR/WARN lines from agent logs |
 | `backup_configs` | snapshot all agent config dirs → `~/.agent-fix-backups/` |
 | `restore_configs` | list / restore a config backup (`confirm=True` required) |
-| `deepseek_setup` | per-agent DeepSeek config snippets; `apply=true` writes Claude settings |
+| `deepseek_setup` | DeepSeek shortcut: per-agent config snippets; `apply=true` writes Claude settings |
+| `provider_setup` | **any provider**: per-agent config snippets (deepseek/openai/anthropic/google/moonshot/zhipu/qwen/openrouter/ollama/custom) |
 
 Issue ids for `fix_check`/`fix_apply`/`fix_info`:
 `agent-broken-generic`, `npm-postinstall-skipped`, `gui-path-blind`,
 `node-version-too-old`, `npm-registry-mirror`, `agent-auth-broken`,
-`deepseek-provider`.
+`provider-config`, `net-connectivity`.
 
 ## Register with your agents
 

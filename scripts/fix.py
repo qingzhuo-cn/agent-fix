@@ -134,6 +134,9 @@ def _passes(pass_spec: Optional[Dict[str, Any]], result: Dict[str, Any]) -> bool
     if "stdout_contains" in pass_spec:
         if not all(s in result["stdout"] for s in pass_spec["stdout_contains"]):
             return False
+    if "stdout_contains_any" in pass_spec:
+        if not any(s in result["stdout"] for s in pass_spec["stdout_contains_any"]):
+            return False
     if "stdout_not_contains" in pass_spec:
         low = result["stdout"].lower()
         if any(s.lower() in low for s in pass_spec["stdout_not_contains"]):
@@ -161,14 +164,41 @@ def find_issue(catalog: Dict[str, Any], issue_id: str) -> Optional[Dict[str, Any
 # ---------------------------------------------------------------- agents
 
 
+# Common provider API-key env vars any agent may use (any provider, global devs)
+COMMON_PROVIDER_KEYS = [
+    "DEEPSEEK_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY",
+    "ANTHROPIC_AUTH_TOKEN", "GEMINI_API_KEY", "KIMI_API_KEY",
+    "MOONSHOT_API_KEY", "ZHIPU_API_KEY", "DASHSCOPE_API_KEY",
+    "OPENROUTER_API_KEY", "OLLAMA_API_KEY", "AZURE_OPENAI_API_KEY",
+    "GROQ_API_KEY", "XAI_API_KEY",
+]
+
+
+def _config_path(agent: Dict[str, Any]) -> str:
+    """Resolve an agent's config home for the current platform.
+
+    Uses the `config_win` registry field on Windows (e.g. $LOCALAPPDATA/hermes);
+    expands ~ and $VARs, normalizes to forward slashes for shell use.
+    """
+    cfg = agent.get("config_win") if (_is_windows() and agent.get("config_win")) else agent.get("config")
+    if not cfg:
+        return ""
+    return os.path.expandvars(os.path.expanduser(cfg)).replace("\\", "/")
+
+
 def _expand(template: Optional[str], agent: Dict[str, Any]) -> Optional[str]:
-    """Replace {name}/{bin}/{npm_pkg} placeholders in a catalog string."""
+    """Replace {name}/{bin}/{npm_pkg}/{config}/{keys} placeholders in a catalog string."""
     if not template:
         return template
+    keys = list(agent.get("provider_env") or []) + COMMON_PROVIDER_KEYS
+    seen: set = set()
+    keys = [k for k in keys if not (k in seen or seen.add(k))]
     return (
         template.replace("{name}", agent.get("name", agent.get("id", "agent")))
         .replace("{bin}", (agent.get("bin") or ["agent"])[0])
         .replace("{npm_pkg}", agent.get("npm_pkg") or "")
+        .replace("{config}", _config_path(agent))
+        .replace("{keys}", "|".join(keys))
     )
 
 
@@ -185,7 +215,7 @@ def detect_agents(catalog: Dict[str, Any]) -> List[Dict[str, Any]]:
             if found:
                 exe = found
                 break
-        cfg_exists = bool(info.get("config")) and Path(info["config"]).expanduser().exists()
+        cfg_exists = bool(_config_path(info)) and Path(_config_path(info).replace("/", os.sep)).exists()
         if exe or cfg_exists:
             detected.append({"id": aid, **info, "exe": exe})
     return detected

@@ -1,6 +1,10 @@
 # Point any agent at the DeepSeek API
 
-- **ID:** `deepseek-provider`
+> Deep-dive for the DeepSeek provider. For the generic multi-provider guide
+> (OpenAI / Anthropic / Google / Moonshot / Zhipu / Qwen / Ollama / OpenRouter /
+> custom), see [provider-config.md](provider-config.md).
+
+- **ID:** `provider-config` (DeepSeek is one row of the provider table)
 - **Affects:** `claude-code`, `codex`, `opencode`, `hermes`, `kimi-code`, `pi`,
   `zcode`, and any OpenAI- or Anthropic-compatible client. Get a key at
   <https://platform.deepseek.com/>.

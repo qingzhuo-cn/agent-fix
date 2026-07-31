@@ -314,43 +314,94 @@ def restore_configs(backup: Optional[str] = None, confirm: bool = False) -> str:
 
 # ---------------------------------------------------------------- branch 7
 
-_DEEPSEEK_SNIPPETS = {
-    "claude-code": (
-        "export ANTHROPIC_BASE_URL=https://api.deepseek.com/anthropic\n"
-        "export ANTHROPIC_AUTH_TOKEN={key}\n"
-        "export ANTHROPIC_MODEL=deepseek-chat\n"
-        "# or persist in ~/.claude/settings.json  env  block"
-    ),
-    "codex": "export OPENAI_BASE_URL=https://api.deepseek.com\nexport OPENAI_API_KEY={key}",
-    "opencode": "opencode auth login (custom) -> base: https://api.deepseek.com, key: {key}, model: deepseek-chat",
-    "hermes": "hermes config set provider deepseek / model deepseek-chat (key via provider config or .env)",
-    "kimi-code": "[provider.deepseek] base_url = https://api.deepseek.com / api_key = {key}  in ~/.kimi-code/config.toml",
-    "pi": "export OPENAI_BASE_URL=https://api.deepseek.com\nexport OPENAI_API_KEY={key}",
-    "zcode": "app provider settings -> base https://api.deepseek.com, key {key}, model deepseek-chat",
+_KNOWN_PROVIDERS = {
+    "deepseek": {"base": "https://api.deepseek.com", "model": "deepseek-chat", "anthropic_path": "/anthropic"},
+    "openai": {"base": "https://api.openai.com/v1", "model": "gpt-4o", "anthropic_path": None},
+    "anthropic": {"base": "https://api.anthropic.com", "model": "claude-sonnet-4-5", "anthropic_path": None},
+    "google": {"base": "https://generativelanguage.googleapis.com/v1beta/openai", "model": "gemini-2.5-pro", "anthropic_path": None},
+    "moonshot": {"base": "https://api.moonshot.cn/v1", "model": "moonshot-v1-8k", "anthropic_path": None},
+    "zhipu": {"base": "https://open.bigmodel.cn/api/paas/v4", "model": "glm-4.6", "anthropic_path": None},
+    "qwen": {"base": "https://dashscope.aliyuncs.com/compatible-mode/v1", "model": "qwen-max", "anthropic_path": None},
+    "openrouter": {"base": "https://openrouter.ai/api/v1", "model": "openai/gpt-4o", "anthropic_path": None},
+    "ollama": {"base": "http://localhost:11434/v1", "model": "qwen2.5-coder:latest", "anthropic_path": None},
 }
 
 
-def deepseek_setup(key: str, apply: bool = False) -> str:
-    """Per-agent DeepSeek config snippets. apply=True also writes Claude settings."""
-    if not key or not key.startswith("sk-"):
-        return "error: a valid DeepSeek API key (sk-...) is required"
-    lines = ["DEEPSEEK SETUP (key: %s***%s)" % (key[:5], key[-4:]), ""]
+def provider_setup(
+    provider: str = "deepseek",
+    api_key: str = "",
+    base_url: str = "",
+    model: str = "",
+    apply: bool = False,
+) -> str:
+    """Generate per-agent config snippets for ANY provider.
+
+    provider: deepseek|openai|anthropic|google|moonshot|zhipu|qwen|openrouter|
+              ollama|custom. api_key required for cloud providers (empty for
+              Ollama). base_url/model default from the provider table.
+    apply=True also writes Claude's ~/.claude/settings.json.
+    """
+    info = _KNOWN_PROVIDERS.get((provider or "").lower(), {"base": "", "model": ""})
+    base = base_url or info.get("base", "")
+    model = model or info.get("model", "deepseek-chat")
+    anthropic_base = base
+    if info.get("anthropic_path"):
+        anthropic_base = base.rstrip("/") + info["anthropic_path"]
+    if not base:
+        return "error: unknown provider — pass base_url explicitly (see fixes/provider-config.md)"
+    if not api_key and provider.lower() != "ollama":
+        return "error: api_key is required (leave empty only for ollama)"
+
+    lines = [
+        f"PROVIDER SETUP: {provider}  (base={base}, model={model}, key={api_key[:5] + '***' + api_key[-4:] if api_key else '(local)'})",
+        "",
+    ]
     for agent in _detect_agents():
         aid = agent.get("id")
-        snippet = _DEEPSEEK_SNIPPETS.get(aid)
-        if not snippet:
-            continue
-        lines.append(f"== {agent.get('name')}")
-        lines.append(snippet.format(key=key))
+        name = agent.get("name", aid)
+        lines.append(f"== {name}")
+        if aid == "claude-code":
+            lines.append(f"  export ANTHROPIC_BASE_URL={anthropic_base}")
+            lines.append(f"  export ANTHROPIC_AUTH_TOKEN={api_key}")
+            lines.append(f"  export ANTHROPIC_MODEL={model}")
+            lines.append("  # or persist in ~/.claude/settings.json env block (apply=true does this)")
+        elif aid in ("codex", "opencode", "pi", "qwen-code"):
+            lines.append(f"  export OPENAI_BASE_URL={base}")
+            lines.append(f"  export OPENAI_API_KEY={api_key}")
+            if aid == "qwen-code":
+                lines.append(f"  # or DASHSCOPE_API_KEY + --dashscope-url {base}")
+        elif aid == "kimi-code":
+            lines.append(f"  # ~/.kimi-code/config.toml:")
+            lines.append(f"  [provider.{provider}]")
+            lines.append(f"  base_url = \"{base}\"")
+            lines.append(f"  api_key = \"{api_key}\"")
+            lines.append(f"  [model.{model}]")
+            lines.append(f"  provider = \"{provider}\"")
+        elif aid == "hermes":
+            lines.append(f"  hermes config set provider {provider}")
+            lines.append(f"  hermes config set model {model}")
+            lines.append(f"  # key via provider config / .env (e.g. {provider.upper()}_API_KEY)")
+        elif aid == "zcode":
+            lines.append(f"  # ZCode app provider settings:")
+            lines.append(f"  Base URL: {base}")
+            lines.append(f"  API key:  {api_key}")
+            lines.append(f"  Model:    {model}")
+        elif aid == "gemini":
+            lines.append(f"  export GEMINI_API_KEY={api_key}")
+        elif aid == "aider":
+            lines.append(f"  export OPENAI_API_KEY={api_key}")
+            lines.append(f"  aider --openai-api-base {base} --model {model}")
+        else:
+            lines.append(f"  set provider env for this agent (see fixes/provider-config.md)")
         lines.append("")
     if apply:
-        written = _apply_claude_settings(key)
+        written = _apply_provider_settings(provider, base, anthropic_base, api_key, model)
         lines.append(f"APPLIED: {written}")
-    lines.append("Note: keys live in local config files; run config_audit before pushing to git.")
+    lines.append("Note: verify with a real model prompt; run config_audit before pushing keys to git.")
     return "\n".join(lines)
 
 
-def _apply_claude_settings(key: str) -> str:
+def _apply_provider_settings(provider: str, base: str, anthropic_base: str, api_key: str, model: str) -> str:
     target = Path.home() / ".claude" / "settings.json"
     data: Dict[str, Any] = {}
     if target.exists():
@@ -361,15 +412,20 @@ def _apply_claude_settings(key: str) -> str:
     env = dict(data.get("env", {}))
     env.update(
         {
-            "ANTHROPIC_BASE_URL": "https://api.deepseek.com/anthropic",
-            "ANTHROPIC_AUTH_TOKEN": key,
-            "ANTHROPIC_MODEL": "deepseek-chat",
+            "ANTHROPIC_BASE_URL": anthropic_base,
+            "ANTHROPIC_AUTH_TOKEN": api_key,
+            "ANTHROPIC_MODEL": model,
         }
     )
     data["env"] = env
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
-    return f"wrote {target}"
+    return f"wrote {target} ({provider}, model {model})"
+
+
+def deepseek_setup(key: str, apply: bool = False) -> str:
+    """DeepSeek-specific shortcut for provider_setup(provider='deepseek')."""
+    return provider_setup(provider="deepseek", api_key=key, apply=apply)
 
 
 # ---------------------------------------------------------------- registry
@@ -412,11 +468,28 @@ BRANCH_TOOLS: Dict[str, Dict[str, Any]] = {
         "fn": lambda a: restore_configs(backup=a.get("backup"), confirm=bool(a.get("confirm", False))),
     },
     "deepseek_setup": {
-        "description": "Generate per-agent DeepSeek config snippets (base URL + key + model) for every detected agent. Pass apply=true to also write ~/.claude/settings.json.",
+        "description": "DeepSeek-specific shortcut: generate per-agent DeepSeek config snippets. Pass apply=true to also write ~/.claude/settings.json. For ANY provider use provider_setup.",
         "args": {
             "key": {"type": "string", "description": "DeepSeek API key (sk-...)"},
             "apply": {"type": "boolean", "description": "also write Claude settings.json (default false)"},
         },
         "fn": lambda a: deepseek_setup(key=a.get("key", ""), apply=bool(a.get("apply", False))),
+    },
+    "provider_setup": {
+        "description": "Generate per-agent config snippets for ANY provider (deepseek|openai|anthropic|google|moonshot|zhipu|qwen|openrouter|ollama|custom). Pass provider + api_key (optional base_url/model overrides). apply=true also writes ~/.claude/settings.json.",
+        "args": {
+            "provider": {"type": "string", "description": "provider id: deepseek, openai, anthropic, google, moonshot, zhipu, qwen, openrouter, ollama, or custom"},
+            "api_key": {"type": "string", "description": "API key (empty only for ollama/local)"},
+            "base_url": {"type": "string", "description": "override base URL (optional; defaults from provider table)"},
+            "model": {"type": "string", "description": "override model name (optional)"},
+            "apply": {"type": "boolean", "description": "also write Claude settings.json (default false)"},
+        },
+        "fn": lambda a: provider_setup(
+            provider=a.get("provider", "deepseek"),
+            api_key=a.get("api_key", ""),
+            base_url=a.get("base_url", ""),
+            model=a.get("model", ""),
+            apply=bool(a.get("apply", False)),
+        ),
     },
 }

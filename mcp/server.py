@@ -33,7 +33,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-VERSION = "1.2.0"
+VERSION = "1.4.0"
 PROTOCOL = "2024-11-05"
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -135,7 +135,7 @@ CORE_TOOLS: Dict[str, Dict[str, Any]] = {
         "fn": lambda a: _fmt_doctor(),
     },
     "fix_check": {
-        "description": "Run diagnostics for one issue id. ids: agent-broken-generic, npm-postinstall-skipped, gui-path-blind, node-version-too-old, npm-registry-mirror, agent-auth-broken, deepseek-provider.",
+        "description": "Run diagnostics for one issue id. ids: agent-broken-generic, npm-postinstall-skipped, gui-path-blind, node-version-too-old, npm-registry-mirror, agent-auth-broken, provider-config, net-connectivity.",
         "args": {"issue_id": {"type": "string", "description": "issue id to check"}},
         "fn": lambda a: _fmt_check(a.get("issue_id", "")),
     },

@@ -16,7 +16,7 @@ Hermes, Cursor, …) can read it directly. The same content is mirrored in
 | `node-version-too-old` | Node too old for the agent's engine requirement → CLI crashes at startup | claude-code, codex, opencode, pi | [node-version.md](node-version.md) |
 | `npm-registry-mirror` | npm install/upgrade slow or fails (network / mirror issues) | all npm-installed agents | [npm-registry.md](npm-registry.md) |
 | `agent-auth-broken` | "Not logged in" / expired OAuth / missing API key | claude-code, codex, kimi-code, pi | [agent-auth.md](agent-auth.md) |
-| `deepseek-provider` | Point any agent at the DeepSeek API (Anthropic- or OpenAI-compatible endpoints) | claude-code, codex, opencode, hermes, kimi-code, pi, zcode | [deepseek-provider.md](deepseek-provider.md) |
+| `provider-config` | No provider configured — set key/base URL/model for ANY provider | all agents | [provider-config.md](provider-config.md) |
 | `net-connectivity` | Agent API endpoints unreachable (TCP/DNS/proxy layer under ALL agents) | all (network layer) | [net-connectivity.md](net-connectivity.md) |
 
 ## Per-agent deep dives
