@@ -255,8 +255,6 @@ A: None. `scripts/fix.py` is pure Python 3.8+ stdlib. Bash wrapper needs `bash`
 
 ## Related
 
-- [awesome-deepseek-integration](https://github.com/deepseek-ai/awesome-deepseek-integration) —
-  the integration list that inspired the presentation of this repo
 - [CC-Switch](https://github.com/farion1231/cc-switch) — the Claude/Codex/OpenCode
   provider switcher whose detection logic motivated the `gui-path-blind` doc
 - [nvm-windows](https://github.com/coreybutler/nvm-windows) / [fnm](https://fnm.vercel.app) —
