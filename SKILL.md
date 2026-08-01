@@ -81,13 +81,13 @@ New agents are **data**, not code. Add one line to `catalog.json` → `agents`
 ## MCP server (any agent can call the toolbox directly)
 
 `mcp/server.py` is a zero-dependency MCP stdio server exposing 17 tools,
-organized as a 三省六部 court (see `mcp/README.md`): 中书省 registers tools,
-门下省 reviews every call (type checks / vetoes), and 尚书省's six ministries
-execute — 吏部 agents (`fix_agents`, `version_check`, `watchdog_status`), 户部
-configs (`config_audit`, `backup_configs`, `restore_configs`), 礼部 providers
-(`provider_setup`, `deepseek_setup`), 兵部 network (`net_diagnose`), 刑部
-diagnosis (`fix_doctor`, `fix_check`, `fix_info`, `log_triage`), 工部 repair
-(`fix_apply`, `self_heal`, `heal_hooks`), plus `court_status`. Register it
+organized as a tree (see `mcp/README.md`): a registry declares every tool, a
+review gate validates each call, and six domain groups execute — agents
+(`fix_agents`, `version_check`, `watchdog_status`), configs (`config_audit`,
+`backup_configs`, `restore_configs`), providers (`provider_setup`,
+`deepseek_setup`), network (`net_diagnose`), diagnosis (`fix_doctor`,
+`fix_check`, `fix_info`, `log_triage`), repair (`fix_apply`, `self_heal`,
+`heal_hooks`), plus `court_status` (the toolbox map). Register it
 once, and Claude Code / OpenCode / Cursor / ZCode / Codex can call any tool as a
 native function — no SKILL.md loading needed:
 

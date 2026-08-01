@@ -9,6 +9,11 @@ loading required.
 transport (newline-delimited JSON-RPC 2.0). Runs locally over stdio, no network
 exposure.
 
+**In one line:** the server is a tree — a registry declares the tools, a review
+gate validates every call, and six domain groups execute. The Tang-court 三省六部
+names below are the cultural naming of that tree (and of the pinyin module
+names); every concept maps 1:1 to a plain software layer.
+
 ## Governance: modeled on the Tang dynasty court
 
 The server is organized like the ancient 三省六部 (Three Departments & Six

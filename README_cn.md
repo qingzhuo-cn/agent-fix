@@ -65,7 +65,7 @@ AI 编程 Agent 通常通过 npm、图形切换工具（如 CC-Switch）、版�
   agent**，而不只是四大主流。新增 agent = 一行数据，零代码
 - 🖥️ **跨平台** — Windows（含 Git Bash、WSL 兼容）、macOS、Linux
 - 🧩 **技能 + CLI + API 三合一** — 可作为 skill 被 Agent 加载，可在终端调用，也可作为 Python 模块导入
-- ⚡ **MCP server，三省六部** — 零依赖 stdio MCP server（`mcp/server.py`，17 个工具）像唐代朝廷一样组织整个工具箱（中书省注册 → 门下省审核 → 尚书省六部执行），让 Claude Code、OpenCode、Cursor、ZCode、Codex 把 `fix_doctor`、`net_diagnose`、`provider_setup`… 当原生工具直接调用；`python mcp/smoke_test.py` 一键回归全部工具
+- ⚡ **MCP server** — 零依赖 stdio MCP server（`mcp/server.py`，17 个工具）按清晰的树状结构组织（注册表 → 审核层 → 六大领域分组），让 Claude Code、OpenCode、Cursor、ZCode、Codex 把 `fix_doctor`、`net_diagnose`、`provider_setup`… 当原生工具直接调用；`python mcp/smoke_test.py` 一键回归全部工具
 - 📦 **零依赖** — 纯 Python 3.8+ 标准库
 - 🔁 **可做看门狗** — `fix auto` 自动体检并自动修复；失败时非零退出，可直接挂 cron/CI
 - 💉 **启动即自愈** — 安装器会自动注册各 Agent 的启动钩子（Claude Code `SessionStart`、Codex `[hooks] session_start`、OpenCode 插件、Hermes cron 看门狗），每次启动 agent 自动体检+修复；`fix selfheal` 健康时零输出，绝不打扰
@@ -184,20 +184,25 @@ report = json.loads(out.stdout)
 ### MCP server（任意 agent 可调用的 17 个工具）
 
 同一套工具箱以 MCP server 形式暴露，**任何支持 MCP 的 agent**（Claude Code、
-OpenCode、Cursor、ZCode、Codex）都能把它当原生工具调用。server 像唐代朝廷
-三省六部一样组织：中书省注册工具、门下省审核每次调用、尚书省六部执行：
+OpenCode、Cursor、ZCode、Codex）都能把它当原生工具调用。server 按树状结构
+组织——注册表声明工具、审核层校验每次调用、六大领域分组负责执行：
 
-| 部门 | 工具 |
+| 分组 | 工具 |
 |------|------|
-| 吏部 · agents | `fix_agents`、`version_check`、`watchdog_status` |
-| 户部 · configs | `config_audit`、`backup_configs`、`restore_configs` |
-| 礼部 · providers | `provider_setup`、`deepseek_setup` |
-| 兵部 · network | `net_diagnose`（端点延迟+代理） |
-| 刑部 · diagnosis | `fix_doctor`、`fix_check`、`fix_info`、`log_triage` |
-| 工部 · repair | `fix_apply`、`self_heal`、`heal_hooks` |
+| Agents | `fix_agents`、`version_check`、`watchdog_status` |
+| Configs | `config_audit`、`backup_configs`、`restore_configs` |
+| Providers | `provider_setup`、`deepseek_setup` |
+| Network | `net_diagnose`（端点延迟+代理） |
+| Diagnosis | `fix_doctor`、`fix_check`、`fix_info`、`log_triage` |
+| Repair | `fix_apply`、`self_heal`、`heal_hooks` |
 
-另有 `court_status`（中书省）——组织架构图，可作为工具直接调用。
+另有 `court_status`——工具箱地图，可作为工具直接调用。
 `python mcp/smoke_test.py` 一键回归全部工具。
+
+（模块保留了唐代三省六部的拼音命名，算是一点文化彩蛋：
+`court/shangshu/libu_personnel.py`=Agents、`hubu.py`=Configs、
+`libu_rites.py`=Providers、`bingbu.py`=Network、`xingbu.py`=Diagnosis、
+`gongbu.py`=Repair。架构详见 `mcp/README.md`。）
 
 ```bash
 python scripts/mcp_register.py all        # 向所有已装 agent 注册
