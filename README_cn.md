@@ -254,8 +254,6 @@ A: 没有。`scripts/fix.py` 是纯 Python 3.8+ 标准库。bash 包装脚本需
 
 ## 相关项目
 
-- [awesome-deepseek-integration](https://github.com/deepseek-ai/awesome-deepseek-integration) —
-  本仓库展示风格参考的 DeepSeek 集成列表
 - [CC-Switch](https://github.com/farion1231/cc-switch) — Claude/Codex/OpenCode 供应商切换
   工具，其检测逻辑催生了 `gui-path-blind` 文档
 - [nvm-windows](https://github.com/coreybutler/nvm-windows) / [fnm](https://fnm.vercel.app) —
