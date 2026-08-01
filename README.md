@@ -30,7 +30,7 @@ English / [简体中文](README_cn.md)
   - [Compatibility matrix](#compatibility-matrix)
   - [Issue catalog](#issue-catalog)
   - [Use it from your programs](#use-it-from-your-programs)
-  - [MCP server (13 tools for any agent)](#mcp-server-13-tools-for-any-agent)
+  - [MCP server (17 tools for any agent)](#mcp-server-17-tools-for-any-agent)
 - [How it works](#how-it-works)
 - [Extending the catalog](#extending-the-catalog)
 - [FAQ](#faq)
@@ -64,7 +64,7 @@ command. This skill makes that repair one command: `fix apply npm-postinstall-sk
 - 🤖 **Every agent, registry-driven** — an agent registry in `catalog.json` covers Claude Code, Codex, OpenCode, Hermes, Kimi Code, Pi, ZCode, Cursor, Gemini CLI, Aider, Qwen Code, Amp, Droid + any npm CLI; `fix doctor` checks **every agent installed on your machine**, not just the big four. New agents = one line of data, no code
 - 🖥️ **Cross-platform** — Windows (incl. Git Bash & WSL-aware), macOS, Linux
 - 🧩 **Skill + CLI + API** — loadable as a skill by agents, callable from a terminal, or importable as a Python module
-- ⚡ **MCP server** — a zero-dependency stdio MCP server (`mcp/server.py`, 13 tools) lets Claude Code, OpenCode, Cursor, ZCode, Codex call the whole toolbox (`fix_doctor`, `net_diagnose`, `provider_setup`, …) as native tools
+- ⚡ **MCP server, 三省六部** — a zero-dependency stdio MCP server (`mcp/server.py`, 17 tools) organizes the whole toolbox like the Tang court (中书省 registry → 门下省 review gate → 尚书省 six ministries), so Claude Code, OpenCode, Cursor, ZCode, Codex can call `fix_doctor`, `net_diagnose`, `provider_setup`, … as native tools; `python mcp/smoke_test.py` regresses every tool
 - 📦 **Zero dependencies** — pure Python 3.8+ stdlib
 - 🔁 **Watchdog-ready** — `fix auto` checks and auto-repairs; non-zero exit on failure drops straight into cron/CI
 - 💉 **Self-heal on agent start** — installers register startup hooks (Claude Code `SessionStart`, Codex `[hooks] session_start`, OpenCode plugin, Hermes cron watchdog) so every agent checks & repairs itself the moment it launches; `fix selfheal` prints nothing when healthy
@@ -181,15 +181,25 @@ out = subprocess.run(["fix", "check", "--json"], capture_output=True, text=True)
 report = json.loads(out.stdout)
 ```
 
-### MCP server (13 tools for any agent)
+### MCP server (17 tools for any agent)
 
 The same toolbox is exposed as an MCP server, so **any MCP-capable agent**
-(Claude Code, OpenCode, Cursor, ZCode, Codex) can call it as native tools:
+(Claude Code, OpenCode, Cursor, ZCode, Codex) can call it as native tools. The
+server is organized like the Tang court 三省六部 (Three Departments & Six
+Ministries): 中书省 registers tools, 门下省 reviews every call, and 尚书省's six
+ministries execute:
 
-| Group | Tools |
-|-------|-------|
-| Core inspect/fix | `fix_agents`, `fix_doctor`, `fix_check`, `fix_apply`, `fix_info` |
-| Branch skills | `net_diagnose` (endpoint latency + proxy), `version_check`, `config_audit` (parse errors + leaked keys), `log_triage`, `backup_configs`, `restore_configs`, `provider_setup` (any provider), `deepseek_setup` (shortcut) |
+| Ministry | Tools |
+|----------|-------|
+| 吏部 agents | `fix_agents`, `version_check`, `watchdog_status` |
+| 户部 configs | `config_audit`, `backup_configs`, `restore_configs` |
+| 礼部 providers | `provider_setup`, `deepseek_setup` |
+| 兵部 network | `net_diagnose` (endpoint latency + proxy) |
+| 刑部 diagnosis | `fix_doctor`, `fix_check`, `fix_info`, `log_triage` |
+| 工部 repair | `fix_apply`, `self_heal`, `heal_hooks` |
+
+Plus `court_status` (中书省) — the organizational chart, callable as a tool.
+`python mcp/smoke_test.py` regresses every tool over the wire.
 
 ```bash
 python scripts/mcp_register.py all        # register with every installed agent
@@ -211,8 +221,9 @@ Then just talk to your agent: *"run fix_doctor and tell me what's broken"*,
         ┌──────────────────────┬───────────────────────┬───────────────────┬──────────────┐
         ▼                      ▼                       ▼                   ▼
   fixes/*.md            scripts/fix.py           SKILL.md / AGENTS.md    mcp/server.py
-  human & agent         CLI + Python API         agent-side loaders     12 MCP tools for
-  knowledge base        (stdlib only)            (Hermes/Claude/OpenCode) any MCP-capable agent
+  human & agent         CLI + Python API         agent-side loaders      MCP server — 17 tools
+  knowledge base        (stdlib only)            (Hermes/Claude/OpenCode) 三省六部 court for
+                                                                          any MCP-capable agent
 ```
 
 Each issue in `catalog.json` is data — `checks` (diagnostics), `fixes` (repair

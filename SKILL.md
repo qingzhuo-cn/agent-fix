@@ -1,7 +1,7 @@
 ---
 name: agent-fix
 description: "Use when ANY AI coding agent (Claude Code, Codex, OpenCode, Hermes, Kimi Code, Pi, ZCode, Cursor, Gemini CLI, ...) is broken or misconfigured: native binary missing after npm install/upgrade, GUI tools (CC-Switch) report 'installed but cannot run', Node too old, npm registry slow/unreachable, agent auth failures, or pointing any agent at the DeepSeek API. Run `fix agents` to see installed agents, `fix doctor` to diagnose, read the matching fixes/*.md doc, apply the fix, then verify with a real command. An MCP server (mcp/server.py) exposes the same tools plus net_diagnose/version_check/config_audit/log_triage/backup/restore/deepseek_setup to any MCP-capable agent."
-version: 1.5.0
+version: 1.6.0
 author: agent-fix contributors
 license: MIT
 metadata:
@@ -80,11 +80,14 @@ New agents are **data**, not code. Add one line to `catalog.json` → `agents`
 
 ## MCP server (any agent can call the toolbox directly)
 
-`mcp/server.py` is a zero-dependency MCP stdio server exposing 16 tools: the core
-inspect/fix set (`fix_agents`, `fix_doctor`, `fix_check`, `fix_apply`, `fix_info`)
-plus 11 branch skills (`net_diagnose`, `version_check`, `config_audit`,
-`log_triage`, `backup_configs`, `restore_configs`, `deepseek_setup`,
-`provider_setup`, `self_heal`, `heal_hooks`, `watchdog_status`). Register it
+`mcp/server.py` is a zero-dependency MCP stdio server exposing 17 tools,
+organized as a 三省六部 court (see `mcp/README.md`): 中书省 registers tools,
+门下省 reviews every call (type checks / vetoes), and 尚书省's six ministries
+execute — 吏部 agents (`fix_agents`, `version_check`, `watchdog_status`), 户部
+configs (`config_audit`, `backup_configs`, `restore_configs`), 礼部 providers
+(`provider_setup`, `deepseek_setup`), 兵部 network (`net_diagnose`), 刑部
+diagnosis (`fix_doctor`, `fix_check`, `fix_info`, `log_triage`), 工部 repair
+(`fix_apply`, `self_heal`, `heal_hooks`), plus `court_status`. Register it
 once, and Claude Code / OpenCode / Cursor / ZCode / Codex can call any tool as a
 native function — no SKILL.md loading needed:
 

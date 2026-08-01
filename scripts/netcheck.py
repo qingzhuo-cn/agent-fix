@@ -4,7 +4,7 @@ netcheck.py — shared network connectivity engine for agent-fix.
 
 Used by:
   - catalog issue `net-connectivity`  (fix check / fix doctor, via fix.py)
-  - MCP branch tool `net_diagnose`    (via mcp/branches.py)
+  - MCP branch tool `net_diagnose`    (via mcp/court/shangshu/bingbu.py)
 
 Pure stdlib. CLI: `python scripts/netcheck.py [--timeout N]`
 Exit code: 0 if every endpoint is reachable, 1 otherwise.
