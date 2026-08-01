@@ -61,6 +61,7 @@ at `--version`; auth/network issues only show up on a real call.
    | `agent-auth-broken` | not logged in / 401 / missing key |
    | `provider-config` | no provider configured — set key/base URL/model for ANY provider (DeepSeek/OpenAI/Anthropic/Google/Ollama/...) |
    | `net-connectivity` | API endpoints unreachable — TCP/DNS/proxy layer under all agents |
+   | `opencode-mcp-schema` | opencode.json MCP entry invalid (`type: stdio` / string `command` / missing `enabled`) → `ConfigInvalidError` incl. history |
 3. **Apply.** `./scripts/fix apply <id> --yes` (auto), or follow the doc's `## Fix`
    section manually. For `manual` fixes (node install, interactive login, native
    agent reinstall) the CLI prints the exact command — run it.

@@ -81,7 +81,11 @@ def register_opencode() -> str:
     cfg = HOME / ".config" / "opencode" / "opencode.json"
     if not cfg.parent.exists():
         return "SKIP opencode: not installed"
-    entry = {"type": "stdio", "command": _python(), "args": [SERVER_ARG]}
+    # OpenCode schema (v1.18+): type must be "local" (command is an ARRAY) or
+    # "remote"; "enabled" is required. A "stdio" entry is INVALID and fails the
+    # whole config at startup -> ConfigInvalidError on EVERY opencode run
+    # (including session list / -c history). See fixes/opencode-mcp-schema.md.
+    entry = {"type": "local", "command": [_python(), SERVER_ARG], "enabled": True}
     return f"opencode: {_merge_json(cfg, 'mcp', entry)}"
 
 

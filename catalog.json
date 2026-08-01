@@ -311,6 +311,39 @@
         { "name": "npm registry reachable", "kind": "net", "host": "registry.npmjs.org", "port": 443, "timeout": 5 }
       ],
       "doc": "fixes/net-connectivity.md"
+    },
+    {
+      "id": "opencode-mcp-schema",
+      "title": "opencode.json mcp entry uses invalid schema (type stdio) -> ConfigInvalidError",
+      "agents": ["opencode"],
+      "symptoms": [
+        "every opencode command (incl. session list / -c history) fails with 'Error: ConfigInvalidError'",
+        "opencode.json mcp.<name> uses \"type\": \"stdio\" or string command (must be local with ARRAY command, or remote; enabled required)"
+      ],
+      "checks": [
+        {
+          "name": "opencode session list validates config",
+          "cmd": "opencode session list 2>&1 | head -5",
+          "pass": { "stdout_not_contains": ["ConfigInvalidError", "Configuration is invalid"] }
+        },
+        {
+          "name": "no stdio-type entries in opencode.json mcp block",
+          "cmd": "grep -nE '\"type\"[[:space:]]*:[[:space:]]*\"stdio\"' \"$HOME/.config/opencode/opencode.json\" 2>/dev/null && echo BAD || echo OK",
+          "pass": { "stdout_contains": ["OK"] }
+        }
+      ],
+      "fixes": [
+        {
+          "name": "Rewrite invalid mcp entries to local/remote schema (see doc)",
+          "manual": true,
+          "cmd": "echo 'Manual/edit step: see fixes/opencode-mcp-schema.md — each mcp.<name> must be type=local with command ARRAY + enabled, or type=remote with url + enabled. Re-run scripts/mcp_register.py after fixing.'"
+        }
+      ],
+      "verify": [
+        { "name": "opencode session list", "cmd": "opencode session list 2>&1 | head -5" },
+        { "name": "opencode smoke run", "cmd": "opencode run 'Respond with exactly: OK' 2>&1 | tail -3" }
+      ],
+      "doc": "fixes/opencode-mcp-schema.md"
     }
   ]
 }

@@ -44,6 +44,7 @@ the user points it at this repo.
    | `agent-auth-broken` | "Not logged in" / 401 / missing API key |
    | `provider-config` | no provider configured — set key/base URL/model for ANY provider (DeepSeek/OpenAI/Anthropic/Google/Ollama/...) |
    | `net-connectivity` | API endpoints unreachable (TCP/DNS/proxy layer under all agents) |
+   | `opencode-mcp-schema` | `opencode.json` MCP entry invalid (`type: stdio` / string `command` / missing `enabled`) → `ConfigInvalidError` on every opencode run incl. history |
 
 3. **Apply the fix.** `./scripts/fix apply <id> --yes` auto-applies; manual fixes
    (node install, interactive login, native agent reinstall) print the exact

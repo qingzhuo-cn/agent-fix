@@ -18,6 +18,7 @@ Hermes, Cursor, …) can read it directly. The same content is mirrored in
 | `agent-auth-broken` | "Not logged in" / expired OAuth / missing API key | claude-code, codex, kimi-code, pi | [agent-auth.md](agent-auth.md) |
 | `provider-config` | No provider configured — set key/base URL/model for ANY provider | all agents | [provider-config.md](provider-config.md) |
 | `net-connectivity` | Agent API endpoints unreachable (TCP/DNS/proxy layer under ALL agents) | all (network layer) | [net-connectivity.md](net-connectivity.md) |
+| `opencode-mcp-schema` | `opencode.json` MCP entry uses invalid schema (`type: stdio` / string `command` / missing `enabled`) → `ConfigInvalidError` on every opencode run incl. history | opencode | [opencode-mcp-schema.md](opencode-mcp-schema.md) |
 
 ## Per-agent deep dives
 
