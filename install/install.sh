@@ -69,7 +69,7 @@ else
 fi
 
 [ -d "$HOME/.claude" ] && install_skill "$HOME/.claude/skills/$NAME" || skip "Claude Code not detected (~/.claude missing)"
-[ -d "$HOME/.config/opencode" ] && install_skill "$HOME/.config/opencode/skill/$NAME" || skip "OpenCode not detected (~/.config/opencode missing)"
+[ -d "$HOME/.config/opencode" ] && install_skill "$HOME/.config/opencode/skills/$NAME" || skip "OpenCode not detected (~/.config/opencode missing)"
 [ -d "$HOME/.codex" ] && install_skill "$HOME/.codex/skills/$NAME" || skip "Codex not detected (~/.codex missing)"
 [ -d "$HOME/.kimi-code" ] && install_skill "$HOME/.kimi-code/skills/$NAME" || skip "Kimi Code not detected (~/.kimi-code missing)"
 [ -d "$HOME/.pi" ] && install_skill "$HOME/.pi/agent/skills/$NAME" || skip "Pi not detected (~/.pi missing)"

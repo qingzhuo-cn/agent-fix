@@ -131,7 +131,7 @@ $ fix apply npm-postinstall-skipped --yes
 | Hermes | `SKILL.md` | `~/.local/share/hermes/skills/agent-fix/`（Win: `%LOCALAPPDATA%\hermes\skills\agent-fix\`） | ✅ |
 | Claude Code | `SKILL.md` | `~/.claude/skills/agent-fix/` | ✅ |
 | Codex CLI | `SKILL.md` + `AGENTS.md` | `~/.codex/skills/agent-fix/` | ✅ |
-| OpenCode | `SKILL.md` + `AGENTS.md` | `~/.config/opencode/skill/agent-fix/` | ✅ |
+| OpenCode | `SKILL.md` + `AGENTS.md` | `~/.config/opencode/skills/agent-fix/` | ✅ |
 | Kimi Code | `SKILL.md`（自动发现） | `~/.kimi-code/skills/agent-fix/` | ✅ |
 | Pi | `SKILL.md` | `~/.pi/agent/skills/agent-fix/` | ✅ |
 | ZCode 及共享 | `SKILL.md` | `~/.agents/skills/agent-fix/` | ✅ |

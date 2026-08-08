@@ -14,7 +14,7 @@ Pi, Kimi Code, or ZCode install is caught automatically.
 |-------|-----|-------------------|-------------|------------|---------------------------------------------|------|
 | Claude Code | `claude` | npm `@anthropic-ai/claude-code` | `~/.claude` | `~/.claude/skills` | `ANTHROPIC_BASE_URL`, `ANTHROPIC_AUTH_TOKEN` | [docs](https://docs.anthropic.com/claude-code) |
 | Codex CLI | `codex` | npm `@openai/codex` | `~/.codex` | `~/.codex/skills` | `OPENAI_BASE_URL`, `OPENAI_API_KEY` | [github](https://github.com/openai/codex) |
-| OpenCode | `opencode` | npm `opencode-ai` | `~/.config/opencode` | `~/.config/opencode/skill` | `OPENAI_BASE_URL`, `OPENAI_API_KEY` | [opencode.ai](https://opencode.ai) |
+| OpenCode | `opencode` | npm `opencode-ai` | `~/.config/opencode` | `~/.config/opencode/skills` | `OPENAI_BASE_URL`, `OPENAI_API_KEY` | [opencode.ai](https://opencode.ai) |
 | Hermes Agent | `hermes` | pip/venv `hermes-agent` | `~/.local/share/hermes` | `~/.local/share/hermes/skills` | provider config in hermes | [docs](https://hermes-agent.nousresearch.com/docs) |
 | Kimi Code | `kimi` | native (`~/.kimi-code/bin`) | `~/.kimi-code` | `~/.kimi-code/skills` | `KIMI_API_KEY` (+ `--skills-dir`, agent profiles) | [kimi.com/code](https://kimi.com/code) |
 | Pi | `pi` | npm `@earendil-works/pi-coding-agent` | `~/.pi` | `~/.pi/agent/skills` | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` | [pi.dev](https://pi.dev) |

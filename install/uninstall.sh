@@ -6,7 +6,8 @@ REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 NAME="agent-fix"
 
 rm -rf "$HOME/.claude/skills/$NAME"                      2>/dev/null || true
-rm -rf "$HOME/.config/opencode/skill/$NAME"              2>/dev/null || true
+rm -rf "$HOME/.config/opencode/skills/$NAME"              2>/dev/null || true
+rm -rf "$HOME/.config/opencode/skill/$NAME"               2>/dev/null || true   # legacy singular dir
 rm -rf "$HOME/.codex/skills/$NAME"                       2>/dev/null || true
 rm -rf "$HOME/.kimi-code/skills/$NAME"                   2>/dev/null || true
 rm -rf "$HOME/.pi/agent/skills/$NAME"                    2>/dev/null || true

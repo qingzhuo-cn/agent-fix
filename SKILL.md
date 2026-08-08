@@ -151,7 +151,7 @@ first modification; re-running install after `git pull` is safe.
 | Hermes | `~/.local/share/hermes/skills/agent-fix/` (Win: `%LOCALAPPDATA%\hermes\skills\agent-fix\`) | `SKILL.md` |
 | Claude Code | `~/.claude/skills/agent-fix/` | `SKILL.md` |
 | Codex CLI | `~/.codex/skills/agent-fix/` | `SKILL.md` |
-| OpenCode | `~/.config/opencode/skill/agent-fix/` | `SKILL.md` |
+| OpenCode | `~/.config/opencode/skills/agent-fix/` | `SKILL.md` |
 | Kimi Code | `~/.kimi-code/skills/agent-fix/` | `SKILL.md` (auto-discovered) |
 | Pi | `~/.pi/agent/skills/agent-fix/` | `SKILL.md` |
 | ZCode & shared | `~/.agents/skills/agent-fix/` | `SKILL.md` |
