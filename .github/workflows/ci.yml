@@ -43,12 +43,12 @@ jobs:
           replies = {json.loads(l)["id"]: json.loads(l) for l in p.stdout.splitlines() if l.strip()}
           assert replies[1]["result"]["serverInfo"]["name"] == "agent-fix"
           names = [t["name"] for t in replies[2]["result"]["tools"]]
-          assert len(names) == 13, names
+          assert len(names) >= 13, names
           assert "fix_doctor" in names and "net_diagnose" in names and "deepseek_setup" in names
-          assert "provider_setup" in names
+          assert "provider_setup" in names and "fix_agents" in names and "self_heal" in names
           assert not replies[3]["result"].get("isError")
           assert not replies[4]["result"].get("isError")
-          print("MCP OK — 13 tools, handshake + fix_agents + net_diagnose")
+          print(f"MCP OK — {len(names)} tools, handshake + fix_agents + net_diagnose")
           EOF
       - name: fix check node-version-too-old (node 20+ preinstalled on runner)
         run: python scripts/fix.py check node-version-too-old
