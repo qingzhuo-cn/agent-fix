@@ -21,10 +21,10 @@
     {
       "id": "npm-postinstall-skipped",
       "title": "npm postinstall skipped -> native binary missing",
-      "agents": ["claude-code", "opencode", "codex", "npm-cli"],
+      "agents": ["all"],
+      "dynamic": true,
       "symptoms": [
-        "opencode --version fails with 'postinstall script was not run'",
-        "claude --version fails with 'native binary not installed'",
+        "{name} --version fails with 'postinstall script was not run' / 'native binary not installed'",
         "GUI tools show the agent as 'installed but cannot run'"
       ],
       "checks": [
@@ -34,31 +34,21 @@
           "pass": { "stdout_equals": "false" }
         },
         {
-          "name": "opencode binary runs",
-          "cmd": "opencode --version 2>&1 || true",
-          "pass": { "stdout_not_contains": ["postinstall", "native binary", "not installed", "Error"] }
-        },
-        {
-          "name": "claude binary runs",
-          "cmd": "claude --version 2>&1 || true",
-          "pass": { "stdout_not_contains": ["postinstall", "native binary", "not installed", "Error"] }
+          "name": "{name} binary runs (npm-postinstall)",
+          "cmd": "{bin} --version 2>&1 || true",
+          "pass": { "stdout_not_contains": ["postinstall", "native binary", "not installed", "Error", "command not found", "not recognized"] }
         }
       ],
       "fixes": [
         {
-          "name": "Re-run opencode postinstall",
-          "cwd": "npm_root/opencode-ai",
-          "cmd": "node postinstall.mjs"
-        },
-        {
-          "name": "Re-run claude-code install script (auto-detects postinstall/install)",
-          "cwd": "npm_root/@anthropic-ai/claude-code",
+          "name": "Re-run {name} install/postinstall script",
+          "dynamic_agent": true,
+          "cwd": "npm_root/{npm_pkg}",
           "cmd": "node -e \"const s=require('./package.json').scripts||{};const f=s.postinstall||s.install;if(!f){console.error('no install/postinstall script');process.exit(1)}console.log('running:',f);require('child_process').execSync(f,{stdio:'inherit'})\""
         }
       ],
       "verify": [
-        { "name": "opencode --version", "cmd": "opencode --version 2>&1" },
-        { "name": "claude --version", "cmd": "claude --version 2>&1" }
+        { "name": "{name} --version", "cmd": "{bin} --version 2>&1 || true" }
       ],
       "doc": "fixes/npm-postinstall.md"
     },
@@ -173,32 +163,29 @@
     {
       "id": "agent-auth-broken",
       "title": "Agent not logged in / expired auth / missing API key",
-      "agents": ["claude-code", "codex"],
+      "agents": ["all"],
+      "dynamic": true,
       "symptoms": [
         "'Not logged in' or 401 Unauthorized on every prompt",
         "--version works but real prompts fail"
       ],
       "checks": [
         {
-          "name": "claude credential file or auth env present",
-          "cmd": "test -f \"$HOME/.claude/.credentials.json\" && echo OK || { env | grep -qE 'ANTHROPIC_AUTH_TOKEN|ANTHROPIC_API_KEY' && echo OK || echo NO; }",
-          "pass": { "stdout_contains": ["OK"] }
-        },
-        {
-          "name": "codex auth file or API key env present",
-          "cmd": "test -f \"$HOME/.codex/auth.json\" && echo OK || { env | grep -qE 'OPENAI_API_KEY' && echo OK || echo NO; }",
-          "pass": { "stdout_contains": ["OK"] }
+          "name": "{name}: credential file or auth env present",
+          "cmd": "test -n \\\"{keys}\\\" && { env | grep -qE '{keys}' && echo KEY-SET || { test -n \\\"{config}\\\" && test -d {config} && echo CONFIG-OK || echo NO; }; } || { test -n \\\"{config}\\\" && test -d {config} && echo CONFIG-OK || echo NO; }",
+          "pass": { "stdout_contains_any": ["KEY-SET", "CONFIG-OK"] }
         }
       ],
       "fixes": [
         {
-          "name": "Interactive login (manual, see doc)",
+          "name": "Interactive login for {name} (manual, see doc)",
+          "dynamic_agent": true,
           "manual": true,
-          "cmd": "echo 'Manual step: run claude /login or codex login (or set the right API-key env). See fixes/agent-auth.md'"
+          "cmd": "echo 'Manual step: log in to {name} (or set the provider key/base URL per fixes/agent-auth.md)'"
         }
       ],
       "verify": [
-        { "name": "claude /login or env auth configured", "cmd": "echo 'Verify with a real prompt: claude \"ping\" --print'" }
+        { "name": "{name}: auth configured", "cmd": "test -n \\\"{keys}\\\" && { env | grep -qE '{keys}' && echo OK || { test -d {config} && echo OK || echo NO; }; } || { test -d {config} && echo OK || echo NO; }" }
       ],
       "doc": "fixes/agent-auth.md"
     },
