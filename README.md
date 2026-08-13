@@ -30,7 +30,7 @@ English / [简体中文](README_cn.md)
   - [Compatibility matrix](#compatibility-matrix)
   - [Issue catalog](#issue-catalog)
   - [Use it from your programs](#use-it-from-your-programs)
-  - [MCP server (17 tools for any agent)](#mcp-server-17-tools-for-any-agent)
+  - [MCP server (19 tools for any agent)](#mcp-server-19-tools-for-any-agent)
 - [How it works](#how-it-works)
 - [Extending the catalog](#extending-the-catalog)
 - [FAQ](#faq)
@@ -60,15 +60,17 @@ command. This skill makes that repair one command: `fix apply npm-postinstall-sk
 
 ## Features
 
-- 🔧 **7 issue classes, 1 command** — `fix doctor` checks everything; `fix apply <id>` repairs and verifies
+- 🔧 **10 issue classes, 1 command** — `fix doctor` checks everything; `fix apply <id>` repairs and verifies
 - 🤖 **Every agent, registry-driven** — an agent registry in `catalog.json` covers Claude Code, Codex, OpenCode, Hermes, Kimi Code, Pi, ZCode, Cursor, Gemini CLI, Aider, Qwen Code, Amp, Droid + any npm CLI; `fix doctor` checks **every agent installed on your machine**, not just the big four. New agents = one line of data, no code
 - 🖥️ **Cross-platform** — Windows (incl. Git Bash & WSL-aware), macOS, Linux
 - 🧩 **Skill + CLI + API** — loadable as a skill by agents, callable from a terminal, or importable as a Python module
-- ⚡ **MCP server** — a zero-dependency stdio MCP server (`mcp/server.py`, 17 tools) organized as a clear tree (registry → review gate → six domain groups), so Claude Code, OpenCode, Cursor, ZCode, Codex can call `fix_doctor`, `net_diagnose`, `provider_setup`, … as native tools; `python mcp/smoke_test.py` regresses every tool
+- ⚡ **MCP server** — a zero-dependency stdio MCP server (`mcp/server.py`, 19 tools) organized as a clear tree (registry → review gate → six domain groups + the DeepSeek Harness office), so Claude Code, OpenCode, Cursor, ZCode, Codex can call `fix_doctor`, `net_diagnose`, `provider_setup`, `dsh_fix`, … as native tools; `python mcp/smoke_test.py` regresses every tool
 - 📦 **Zero dependencies** — pure Python 3.8+ stdlib
 - 🔁 **Watchdog-ready** — `fix auto` checks and auto-repairs; non-zero exit on failure drops straight into cron/CI
 - 💉 **Self-heal on agent start** — installers register startup hooks (Claude Code `SessionStart`, Codex `[hooks] session_start`, OpenCode plugin, Hermes cron watchdog) so every agent checks & repairs itself the moment it launches; `fix selfheal` prints nothing when healthy
 - 🧪 **Verified fixes** — every fix ends with a real verification step, not just `--version`
+- 🔌 **DeepSeek Harness (`dsh`) repair** — `deepseek-harness-broken` diagnoses a broken `dsh` launcher (binary missing / Node too old / incomplete plugin bundles); `dsh_diagnose` + `dsh_fix` repair & verify it over MCP or CLI
+- 🔐 **Secret-safe by default** — API keys / tokens are redacted from every output (`config_audit`, `log_triage`, diagnosis detail, proxy credentials); provider keys stay masked unless you pass `show_key=true`; config backups are `chmod 600`
 
 ## Quick Start
 
@@ -153,6 +155,8 @@ $ fix apply npm-postinstall-skipped --yes
 | `agent-auth-broken` | "Not logged in" / expired OAuth / missing key | claude-code, codex, kimi-code, pi | [doc](fixes/agent-auth.md) |
 | `provider-config` | no provider configured — set key/base URL/model for ANY provider (DeepSeek/OpenAI/Anthropic/Google/Ollama/...) | all | [doc](fixes/provider-config.md) |
 | `net-connectivity` | agent API endpoints unreachable (TCP/DNS/proxy layer under all agents) | all (network layer) | [doc](fixes/net-connectivity.md) |
+| `opencode-mcp-schema` | `opencode.json` MCP entry invalid (`type: stdio` / string `command` / missing `enabled`) → `ConfigInvalidError` | opencode | [doc](fixes/opencode-mcp-schema.md) |
+| `deepseek-harness-broken` | DeepSeek Harness (`dsh`) won't boot — binary missing / Node too old / incomplete plugin bundles | dsh | [doc](fixes/deepseek-harness.md) |
 
 Per-agent deep dives: [Kimi Code](fixes/kimi-code.md) · [Pi](fixes/pi.md) · [ZCode](fixes/zcode.md)
 
@@ -181,12 +185,12 @@ out = subprocess.run(["fix", "check", "--json"], capture_output=True, text=True)
 report = json.loads(out.stdout)
 ```
 
-### MCP server (17 tools for any agent)
+### MCP server (19 tools for any agent)
 
 The same toolbox is exposed as an MCP server, so **any MCP-capable agent**
 (Claude Code, OpenCode, Cursor, ZCode, Codex) can call it as native tools. It is
 organized as a tree — a registry declares the tools, a review gate validates
-every call, and six domain groups execute:
+every call, and six domain groups plus the DeepSeek Harness office execute:
 
 | Group | Tools |
 |-------|-------|
@@ -196,14 +200,17 @@ every call, and six domain groups execute:
 | Network | `net_diagnose` (endpoint latency + proxy) |
 | Diagnosis | `fix_doctor`, `fix_check`, `fix_info`, `log_triage` |
 | Repair | `fix_apply`, `self_heal`, `heal_hooks` |
+| Harness (DeepSeek) | `dsh_diagnose`, `dsh_fix` |
 
 Plus `court_status` — the toolbox map, callable as a tool.
 `python mcp/smoke_test.py` regresses every tool over the wire.
+Every tool redacts API keys / tokens in its output — see `mcp/README.md` security notes.
 
 (The modules keep the Tang-court pinyin names — a small nod to the ancient
 三省六部 system: `court/shangshu/libu_personnel.py` = agents, `hubu.py` =
 configs, `libu_rites.py` = providers, `bingbu.py` = network, `xingbu.py` =
-diagnosis, `gongbu.py` = repair. See `mcp/README.md` for the architecture.)
+diagnosis, `gongbu.py` = repair, `taipu.py` = the DeepSeek Harness office. See
+`mcp/README.md` for the architecture.)
 
 ```bash
 python scripts/mcp_register.py all        # register with every installed agent
@@ -225,9 +232,9 @@ Then just talk to your agent: *"run fix_doctor and tell me what's broken"*,
         ┌──────────────────────┬───────────────────────┬───────────────────┬──────────────┐
         ▼                      ▼                       ▼                   ▼
   fixes/*.md            scripts/fix.py           SKILL.md / AGENTS.md    mcp/server.py
-  human & agent         CLI + Python API         agent-side loaders      MCP server — 17 tools
+  human & agent         CLI + Python API         agent-side loaders      MCP server — 19 tools
   knowledge base        (stdlib only)            (Hermes/Claude/OpenCode) tree: registry → gate
-                                                                          → 6 domain groups
+                                                                          → 6 domain groups + harness
 ```
 
 Each issue in `catalog.json` is data — `checks` (diagnostics), `fixes` (repair

@@ -13,9 +13,9 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 
-from . import bingbu, gongbu, hubu, libu_personnel, libu_rites, xingbu
+from . import bingbu, gongbu, hubu, libu_personnel, libu_rites, taipu, xingbu
 
-# 吏 户 礼 兵 刑 工 — the traditional order of the six ministries
+# 吏 户 礼 兵 刑 工 — the traditional order of the six ministries, plus 太仆寺
 MINISTRIES: List[Any] = [
     libu_personnel,  # 吏部 — the officials (agents)
     hubu,            # 户部 — the registers (configs)
@@ -23,6 +23,7 @@ MINISTRIES: List[Any] = [
     bingbu,          # 兵部 — the defense (network)
     xingbu,          # 刑部 — the investigation (diagnosis)
     gongbu,          # 工部 — the works (repair)
+    taipu,           # 太仆寺 — the DeepSeek Harness (dsh)
 ]
 
 

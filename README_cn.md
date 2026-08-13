@@ -30,7 +30,7 @@ Codex、OpenCode、Hermes、Kimi Code、Pi、ZCode、Cursor、Gemini CLI、Aider
   - [兼容性矩阵](#兼容性矩阵)
   - [问题目录](#问题目录)
   - [在程序中调用](#在程序中调用)
-  - [MCP server（任意 agent 可调用的 17 个工具）](#mcp-server任意-agent-可调用的-17-个工具)
+  - [MCP server（任意 agent 可调用的 19 个工具）](#mcp-server任意-agent-可调用的-19-个工具)
 - [工作原理](#工作原理)
 - [扩展目录](#扩展目录)
 - [常见问题 FAQ](#常见问题-faq)
@@ -58,18 +58,20 @@ AI 编程 Agent 通常通过 npm、图形切换工具（如 CC-Switch）、版�
 
 ## 特性
 
-- 🔧 **7 类问题，1 条命令** — `fix doctor` 全面体检；`fix apply <id>` 修复并验证
+- 🔧 **10 类问题，1 条命令** — `fix doctor` 全面体检；`fix apply <id>` 修复并验证
 - 🤖 **全 Agent 覆盖，注册表驱动** — `catalog.json` 内置 agent 注册表：Claude Code、
   Codex、OpenCode、Hermes、Kimi Code、Pi、ZCode、Cursor、Gemini CLI、Aider、
   Qwen Code、Amp、Droid + 任意 npm CLI；`fix doctor` 会检查**本机实际安装的每一个
   agent**，而不只是四大主流。新增 agent = 一行数据，零代码
 - 🖥️ **跨平台** — Windows（含 Git Bash、WSL 兼容）、macOS、Linux
 - 🧩 **技能 + CLI + API 三合一** — 可作为 skill 被 Agent 加载，可在终端调用，也可作为 Python 模块导入
-- ⚡ **MCP server** — 零依赖 stdio MCP server（`mcp/server.py`，17 个工具）按清晰的树状结构组织（注册表 → 审核层 → 六大领域分组），让 Claude Code、OpenCode、Cursor、ZCode、Codex 把 `fix_doctor`、`net_diagnose`、`provider_setup`… 当原生工具直接调用；`python mcp/smoke_test.py` 一键回归全部工具
+- ⚡ **MCP server** — 零依赖 stdio MCP server（`mcp/server.py`，19 个工具）按清晰的树状结构组织（注册表 → 审核层 → 六大领域分组 + DeepSeek Harness 办事处），让 Claude Code、OpenCode、Cursor、ZCode、Codex 把 `fix_doctor`、`net_diagnose`、`provider_setup`、`dsh_fix`… 当原生工具直接调用；`python mcp/smoke_test.py` 一键回归全部工具
 - 📦 **零依赖** — 纯 Python 3.8+ 标准库
 - 🔁 **可做看门狗** — `fix auto` 自动体检并自动修复；失败时非零退出，可直接挂 cron/CI
 - 💉 **启动即自愈** — 安装器会自动注册各 Agent 的启动钩子（Claude Code `SessionStart`、Codex `[hooks] session_start`、OpenCode 插件、Hermes cron 看门狗），每次启动 agent 自动体检+修复；`fix selfheal` 健康时零输出，绝不打扰
 - 🧪 **修复必验证** — 每个修复都以真实命令验证收尾，而不是只跑 `--version`
+- 🔌 **DeepSeek Harness（`dsh`）修复** — `deepseek-harness-broken` 诊断损坏的 `dsh` 启动器（二进制缺失 / Node 过旧 / 插件包不完整）；`dsh_diagnose` + `dsh_fix` 通过 MCP 或 CLI 修复并验证
+- 🔐 **默认脱敏** — 所有输出都会对 API key / token 脱敏（`config_audit`、`log_triage`、诊断详情、代理凭据）；provider 密钥默认打码，除非显式 `show_key=true`；配置备份 `chmod 600`
 
 ## 快速开始
 
@@ -153,6 +155,8 @@ $ fix apply npm-postinstall-skipped --yes
 | `agent-auth-broken` | 未登录 / OAuth 过期 / 缺少 API Key | claude-code, codex, kimi-code, pi | [doc](fixes/agent-auth.md) |
 | `provider-config` | 未配置 provider —— 为任意 provider 设置 key/base URL/model（DeepSeek/OpenAI/Anthropic/Google/Ollama/...） | 全部 | [doc](fixes/provider-config.md) |
 | `net-connectivity` | Agent API 端点不可达（TCP/DNS/代理层，所有 agent 的底层依赖） | 全部（网络层） | [doc](fixes/net-connectivity.md) |
+| `opencode-mcp-schema` | `opencode.json` MCP 条目 schema 无效（`type: stdio` / 字符串 `command` / 缺 `enabled`）→ `ConfigInvalidError` | opencode | [doc](fixes/opencode-mcp-schema.md) |
+| `deepseek-harness-broken` | DeepSeek Harness（`dsh`）无法启动 —— 二进制缺失 / Node 过旧 / 插件包不完整 | dsh | [doc](fixes/deepseek-harness.md) |
 
 Agent 专项文档：[Kimi Code](fixes/kimi-code.md) · [Pi](fixes/pi.md) · [ZCode](fixes/zcode.md)
 
@@ -181,11 +185,11 @@ out = subprocess.run(["fix", "check", "--json"], capture_output=True, text=True)
 report = json.loads(out.stdout)
 ```
 
-### MCP server（任意 agent 可调用的 17 个工具）
+### MCP server（任意 agent 可调用的 19 个工具）
 
 同一套工具箱以 MCP server 形式暴露，**任何支持 MCP 的 agent**（Claude Code、
 OpenCode、Cursor、ZCode、Codex）都能把它当原生工具调用。server 按树状结构
-组织——注册表声明工具、审核层校验每次调用、六大领域分组负责执行：
+组织——注册表声明工具、审核层校验每次调用、六大领域分组 + DeepSeek Harness 办事处负责执行：
 
 | 分组 | 工具 |
 |------|------|
@@ -195,14 +199,16 @@ OpenCode、Cursor、ZCode、Codex）都能把它当原生工具调用。server �
 | Network | `net_diagnose`（端点延迟+代理） |
 | Diagnosis | `fix_doctor`、`fix_check`、`fix_info`、`log_triage` |
 | Repair | `fix_apply`、`self_heal`、`heal_hooks` |
+| Harness (DeepSeek) | `dsh_diagnose`、`dsh_fix` |
 
 另有 `court_status`——工具箱地图，可作为工具直接调用。
 `python mcp/smoke_test.py` 一键回归全部工具。
+所有工具都会在输出中对 API key / token 脱敏 —— 见 `mcp/README.md` 安全说明。
 
 （模块保留了唐代三省六部的拼音命名，算是一点文化彩蛋：
 `court/shangshu/libu_personnel.py`=Agents、`hubu.py`=Configs、
 `libu_rites.py`=Providers、`bingbu.py`=Network、`xingbu.py`=Diagnosis、
-`gongbu.py`=Repair。架构详见 `mcp/README.md`。）
+`gongbu.py`=Repair、`taipu.py`=DeepSeek Harness 办事处。架构详见 `mcp/README.md`。）
 
 ```bash
 python scripts/mcp_register.py all        # 向所有已装 agent 注册

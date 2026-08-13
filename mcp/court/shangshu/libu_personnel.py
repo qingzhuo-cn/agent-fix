@@ -52,7 +52,7 @@ def version_check() -> str:
         installed = "?"
         try:
             r = subprocess.run(
-                [_resolve(bin_name), "--version"], capture_output=True, text=True, timeout=20
+                [_resolve(bin_name), "--version"], capture_output=True, text=True, errors="replace", timeout=20
             )
             installed = (r.stdout or r.stderr or "").strip().splitlines()[0][:60]
         except Exception:
@@ -64,6 +64,7 @@ def version_check() -> str:
                     [_resolve("npm"), "view", npm_pkg, "version"],
                     capture_output=True,
                     text=True,
+                    errors="replace",
                     timeout=30,
                 )
                 latest = (r.stdout or r.stderr or "").strip()

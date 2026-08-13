@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
-from .common import _detect_agents
+from .common import _detect_agents, _mask_secrets
 
 MINISTRY = {
     "id": "gongbu",
@@ -35,25 +35,26 @@ def _fmt_apply(issue_id: str, yes: bool = True) -> str:
     for f in out["fixed"]:
         lines.append(f"  [FIXED] {f['name']}")
     for s in out["skipped"]:
-        lines.append(f"  [SKIP]  {s['name']} ({s['reason']})")
+        lines.append(f"  [SKIP]  {s['name']} ({_mask_secrets(s['reason'])})")
     lines.append("")
     lines.append("=> verified OK" if out["verified"] else "=> not fully verified (see doc)")
     return "\n".join(lines)
 
 
-def self_heal() -> str:
-    """Run the full check + auto-fix pipeline once (same engine as startup hooks)."""
+def self_heal(apply: bool = True) -> str:
+    """Run the full check pipeline once (same engine as startup hooks). apply=False = diagnose-only (no fixes)."""
     import fix
 
-    r = fix.run_selfheal(fix.load_catalog())
-    lines = ["SELF-HEAL"]
+    r = fix.run_selfheal(fix.load_catalog(), apply=apply)
+    lines = ["SELF-HEAL" + ("" if apply else " (diagnose-only, no fixes applied)")]
     if r["timed_out"]:
         lines.append("  timed out — run fix_doctor manually")
     elif r["fixed"] or r["unfixed"]:
         if r["fixed"]:
             lines.append("  fixed: " + ", ".join(r["fixed"]))
         if r["unfixed"]:
-            lines.append("  still broken: " + ", ".join(r["unfixed"]))
+            label = "still broken" if apply else "broken (not fixed)"
+            lines.append(f"  {label}: " + ", ".join(r["unfixed"]))
     else:
         lines.append("  all healthy")
     return "\n".join(lines)
@@ -87,9 +88,11 @@ TOOLS: Dict[str, Dict[str, Any]] = {
         "fn": lambda a: _fmt_apply(a.get("issue_id", "")),
     },
     "self_heal": {
-        "description": "Run the full check + auto-fix pipeline once (same engine as the startup hooks): every catalog check, auto-apply fixes for anything broken, report concise results. Use when the user reports any agent symptom, or as a periodic health pass.",
-        "args": {},
-        "fn": lambda a: self_heal(),
+        "description": "Run the full check pipeline once (same engine as the startup hooks). Default apply=true auto-fixes anything broken; apply=false only diagnoses (reports broken issues, changes nothing). Use when the user reports any agent symptom, or as a periodic health pass.",
+        "args": {
+            "apply": {"type": "boolean", "description": "apply fixes (default true); false = diagnose only, no changes"},
+        },
+        "fn": lambda a: self_heal(apply=bool(a.get("apply", True))),
     },
     "heal_hooks": {
         "description": "Manage agent-fix self-heal startup hooks. action: status (default) | install | uninstall. agent_id optional (claude-code|codex|opencode|hermes; omit = all installed). install registers the startup hook so the agent auto-checks+repairs on every launch; uninstall removes it; status shows what is registered.",

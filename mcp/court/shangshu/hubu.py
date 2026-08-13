@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import datetime
 import json
+import os
 import re
 import shutil
 import zipfile
@@ -108,7 +109,15 @@ def backup_configs() -> str:
                     count += 1
         zf.writestr("_manifest.json", json.dumps(manifest, indent=2))
     size = dest.stat().st_size
-    return f"backup created: {dest}\nsize: {size/1024:.1f} KB | files: {count}"
+    try:
+        os.chmod(dest, 0o600)  # configs may contain API keys — restrict perms (POSIX)
+    except OSError:
+        pass
+    return (
+        f"backup created: {dest}\n"
+        f"size: {size/1024:.1f} KB | files: {count}\n"
+        "note: contains plaintext configs (may include API keys) — kept local & private"
+    )
 
 
 def restore_configs(backup: Optional[str] = None, confirm: bool = False) -> str:

@@ -15,7 +15,7 @@ import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from .common import _detect_agents
+from .common import _detect_agents, _mask_secrets
 
 MINISTRY = {
     "id": "xingbu",
@@ -38,7 +38,7 @@ def _fmt_doctor() -> str:
         if state["broken"]:
             for r in state["results"]:
                 if r["status"] == "FAIL":
-                    lines.append(f"    [FAIL] {r.get('agent','') and '['+r['agent']+'] ' or ''}{r['name']}: {r['detail'][:200]}")
+                    lines.append(f"    [FAIL] {r.get('agent','') and '['+r['agent']+'] ' or ''}{r['name']}: {_mask_secrets(r['detail'][:200])}")
             broken.append(issue["id"])
         else:
             lines.append("   -> healthy")
@@ -62,7 +62,7 @@ def _fmt_check(issue_id: str) -> str:
         prefix = f"[{r['agent']}] " if r.get("agent") else ""
         lines.append(f"  {mark} {prefix}{r['name']}")
         if r["status"] == "FAIL" and r.get("detail"):
-            lines.append(f"        {r['detail'][:300]}")
+            lines.append(f"        {_mask_secrets(r['detail'][:300])}")
     lines.append("")
     lines.append("=> broken" if state["broken"] else "=> healthy")
     return "\n".join(lines)
@@ -108,7 +108,7 @@ def log_triage(agent_id: Optional[str] = None, lines: int = 30) -> str:
                 continue
             for line in text.splitlines()[-500:]:
                 if pat.search(line):
-                    hits.append(f"{f.name}: {line.strip()[:160]}")
+                    hits.append(_mask_secrets(f"{f.name}: {line.strip()[:160]}"))
         out.append(f"== {agent.get('name')}")
         if hits:
             out += [f"   {h}" for h in hits[-int(lines):]]

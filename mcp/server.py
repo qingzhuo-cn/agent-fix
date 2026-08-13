@@ -26,7 +26,7 @@ from typing import Any, Dict, Optional
 
 from court import call_tool, tool_defs
 
-VERSION = "1.6.0"
+VERSION = "1.7.0"
 PROTOCOL = "2024-11-05"
 
 

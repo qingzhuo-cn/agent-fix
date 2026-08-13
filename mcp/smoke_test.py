@@ -39,11 +39,13 @@ FAST_CALLS: dict = {
     "deepseek_setup": ({"key": ""}, False),  # missing key -> error TEXT (not isError)
     "watchdog_status": ({}, False),
     "heal_hooks": ({"action": "status"}, False),
+    "dsh_diagnose": ({}, False),
+    "dsh_fix": ({"apply": False}, False),  # dry-run, no mutation
 }
 SLOW_CALLS: dict = {
     "net_diagnose": ({"timeout": 3}, False),
     "version_check": ({}, False),
-    "self_heal": ({}, False),
+    "self_heal": ({"apply": False}, False),  # diagnose-only, no mutation
 }
 
 

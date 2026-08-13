@@ -39,7 +39,7 @@ def _python() -> str:
 
 def _cmd(args: List[str]) -> str:
     try:
-        r = subprocess.run(args, capture_output=True, text=True, timeout=60)
+        r = subprocess.run(args, capture_output=True, text=True, errors="replace", timeout=60)
         return (r.stdout or r.stderr or "").strip()
     except Exception as e:
         return f"error: {e}"

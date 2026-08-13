@@ -14,11 +14,12 @@ from __future__ import annotations
 
 import datetime
 import os
+import re
 import select
 import socket
 import subprocess
 import sys
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 # (label, host) — every AI-agent API endpoint we care about
 ENDPOINTS: List[Tuple[str, str]] = [
@@ -71,20 +72,34 @@ def check_endpoint(host: str, port: int = 443, timeout: float = 5.0) -> Dict[str
         sock.close()
 
 
+_URL_CREDS = re.compile(r"(://)[^/@\s:]+:[^/@\s]+@")
+
+
+def _mask_url_creds(value: Optional[str]) -> str:
+    """Redact user:password@ inside proxy/URL strings (e.g. http://u:p@host)."""
+    if not value:
+        return "(unset)"
+    return _URL_CREDS.sub(r"\1***@", value)
+
+
 def proxy_env_report() -> List[str]:
     lines = ["PROXY ENV:"]
     for k in ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY"):
         v = os.environ.get(k) or os.environ.get(k.lower())
-        lines.append(f"  {k:<12} = {v or '(unset)'}")
+        lines.append(f"  {k:<12} = {_mask_url_creds(v)}")
     npm_proxy = None
     try:
-        npm_proxy = (
-            subprocess.run(["npm", "config", "get", "proxy"], capture_output=True, text=True, timeout=10)
-            .stdout.strip()
-        )
+        npm_proxy = subprocess.run(
+            ["npm", "config", "get", "proxy"],
+            capture_output=True,
+            text=True,
+            errors="replace",
+            timeout=10,
+        ).stdout
+        npm_proxy = (npm_proxy or "").strip()
     except Exception:
         pass
-    lines.append(f"  npm proxy  = {npm_proxy or '(unset)'}")
+    lines.append(f"  npm proxy  = {_mask_url_creds(npm_proxy)}")
     return lines
 
 

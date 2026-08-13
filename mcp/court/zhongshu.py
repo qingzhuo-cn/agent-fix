@@ -62,9 +62,9 @@ def court_status() -> str:
         "三省 (Three Departments):",
         "  中书省 Zhongshu  (registry & edicts) — registers every tool, answers court_status",
         "  门下省 Mensheng  (review gate)        — validates every call, vetoes bad ones",
-        "  尚书省 Shangshu  (execution)          — the six ministries below",
+        "  尚书省 Shangshu  (execution)          — the six ministries + 太仆寺 below",
         "",
-        f"六部 (Six Ministries) — {len(reg)} tools in service:",
+        f"六部 + 太仆寺 (Six Ministries + the Imperial Harness Office) — {len(reg)} tools in service:",
     ]
     for m in MINISTRIES:
         meta = m.MINISTRY

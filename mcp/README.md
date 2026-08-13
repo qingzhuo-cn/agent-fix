@@ -10,7 +10,7 @@ transport (newline-delimited JSON-RPC 2.0). Runs locally over stdio, no network
 exposure.
 
 **In one line:** the server is a tree — a registry declares the tools, a review
-gate validates every call, and six domain groups execute. The Tang-court 三省六部
+gate validates every call, and six domain groups plus the DeepSeek Harness office execute. The Tang-court 三省六部
 names below are the cultural naming of that tree (and of the pinyin module
 names); every concept maps 1:1 to a plain software layer.
 
@@ -35,7 +35,7 @@ place to extend:
                  │  promulgated (court_status prints the chart) │
                 └──────────────────────┬──────────────────────┘
                 ┌──────────────────────▼──────────────────────┐
-  尚书省 Shangshu │  the six ministries execute (see table below) │
+  尚书省 Shangshu │  the six ministries + 太仆寺 execute (see table below) │
                 └─────────────────────────────────────────────┘
 ```
 
@@ -43,9 +43,9 @@ place to extend:
 |------------|--------|------|
 | 中书省 Zhongshu (Central Secretariat) | `court/zhongshu.py` | drafts & maintains the tool registry (政令); `court_status` |
 | 门下省 Mensheng (Chancellery) | `court/mensheng.py` | reviews every call: type checks, vetoes (封驳), error wrapping |
-| 尚书省 Shangshu (State Affairs) | `court/shangshu/` | executes — six ministries below |
+| 尚书省 Shangshu (State Affairs) | `court/shangshu/` | executes — six ministries + 太仆寺 below |
 
-### The six ministries (尚书省)
+### The ministries (尚书省 — 六部 + 太仆寺)
 
 | Ministry | Module | Domain | Tools |
 |----------|--------|--------|-------|
@@ -55,9 +55,10 @@ place to extend:
 | 兵部 War | `court/shangshu/bingbu.py` | the defense (network) | `net_diagnose` |
 | 刑部 Justice | `court/shangshu/xingbu.py` | the investigation (diagnosis) | `fix_doctor`, `fix_check`, `fix_info`, `log_triage` |
 | 工部 Works | `court/shangshu/gongbu.py` | the works (repair) | `fix_apply`, `self_heal`, `heal_hooks` |
+| 太仆寺 Harness | `court/shangshu/taipu.py` | the DeepSeek Harness (dsh) | `dsh_diagnose`, `dsh_fix` |
 
 Plus `court_status` (中书省) — the organizational chart, callable as a tool to
-discover the whole structure: **17 tools** in total.
+discover the whole structure: **19 tools** in total.
 
 `mcp/branches.py` is a deprecated compatibility shim re-exporting the old
 `BRANCH_TOOLS` table and branch functions; new code imports from `court`
@@ -76,12 +77,12 @@ discover the whole structure: **17 tools** in total.
    门下省 auto-reviews it (types, vetoes, error wrapping).
 4. Run `python mcp/smoke_test.py --quick` to confirm it registers and responds.
 
-## Tools (17)
+## Tools (19)
 
 Issue ids for `fix_check`/`fix_apply`/`fix_info`:
 `agent-broken-generic`, `npm-postinstall-skipped`, `gui-path-blind`,
 `node-version-too-old`, `npm-registry-mirror`, `agent-auth-broken`,
-`provider-config`, `net-connectivity`.
+`provider-config`, `net-connectivity`, `deepseek-harness-broken`.
 
 ## Register with your agents
 
@@ -138,6 +139,7 @@ printf '%s\n' \
 - "version_check — am I up to date?"
 - "Before I upgrade anything, backup_configs"
 - "Point everything at DeepSeek: deepseek_setup with key sk-…"
+- "DeepSeek Harness won't boot — dsh_diagnose, then dsh_fix apply=true"
 - "court_status — what can you do?"
 
 ## Security notes

@@ -271,6 +271,24 @@ def check_issue(
         for agent in detected:
             for check_t in issue.get("checks", []):
                 check = {k: v for k, v in check_t.items()}
+                if agent.get("no_version") and "--version" in check.get("cmd", ""):
+                    # GUI/desktop app (zcode/cursor): --version would launch the
+                    # GUI and hang. Binary presence is already proven by
+                    # detection (bin resolved on PATH), so report PASS.
+                    name = _expand(check.get("name", ""), agent)
+                    if not quiet:
+                        print(f"    [PASS] [{agent.get('id')}] {name}")
+                        print("          GUI app — binary presence verified via PATH (no --version probe)")
+                    results.append(
+                        {
+                            "name": name,
+                            "status": "PASS",
+                            "detail": "GUI app — binary presence verified via PATH (no --version probe)",
+                            "exit": 0,
+                            "agent": agent.get("id"),
+                        }
+                    )
+                    continue
                 check["name"] = _expand(check.get("name", ""), agent)
                 check["cmd"] = _expand(check.get("cmd", ""), agent)
                 results.append(_run_one_check(check, quiet, agent.get("id")))
@@ -382,7 +400,8 @@ def apply_issue(
             if not quiet:
                 print(f"    [SKIP] {fix['name']} (dir not found: {cwd})")
             continue
-        print(f"    [FIX ] {fix['name']}")
+        if not quiet:
+            print(f"    [FIX ] {fix['name']}")
         if not yes:
             try:
                 answer = input("          run this fix? [y/N] ").strip().lower()
@@ -409,12 +428,14 @@ def apply_issue(
         for agent in agents:
             for v_t in issue.get("verify", []):
                 v = {k: vv for k, vv in v_t.items()}
+                if agent.get("no_version") and "--version" in v.get("cmd", ""):
+                    continue  # GUI app: skip --version verify (presence proven at detection)
                 v["name"] = _expand(v.get("name", ""), agent)
                 v["cmd"] = _expand(v.get("cmd", ""), agent)
-                verified = _run_one_verify(v, verified)
+                verified = _run_one_verify(v, verified, quiet=quiet)
     else:
         for v in issue.get("verify", []):
-            verified = _run_one_verify(v, verified)
+            verified = _run_one_verify(v, verified, quiet=quiet)
     return {"id": issue["id"], "fixed": fixed, "skipped": skipped, "verified": verified}
 
 
@@ -474,11 +495,13 @@ def auto_fix(catalog: Dict[str, Any], quiet: bool = False) -> Dict[str, Any]:
     return report
 
 
-def run_selfheal(catalog: Dict[str, Any], deadline: float = 75.0) -> Dict[str, Any]:
-    """Check all + auto-fix, silent when healthy. Returns {fixed, unfixed, timed_out}.
+def run_selfheal(catalog: Dict[str, Any], deadline: float = 75.0, apply: bool = True) -> Dict[str, Any]:
+    """Check all (+ auto-fix when apply=True), silent when healthy.
 
-    Shared by the CLI (`fix selfheal`) and the MCP server (`self_heal` tool) so
-    both use the exact same pipeline. No printing — callers format the report.
+    Returns {fixed, unfixed, timed_out}. apply=False runs diagnose-only: broken
+    issues are reported in `unfixed` but nothing is applied. Shared by the CLI
+    (`fix selfheal`) and the MCP server (`self_heal` tool) so both use the exact
+    same pipeline. No printing — callers format the report.
     """
     agents = detect_agents(catalog)
     fixed: List[str] = []
@@ -489,6 +512,9 @@ def run_selfheal(catalog: Dict[str, Any], deadline: float = 75.0) -> Dict[str, A
             return {"fixed": fixed, "unfixed": unfixed, "timed_out": True}
         state = check_issue(issue, quiet=True, agents=agents)
         if not state["broken"]:
+            continue
+        if not apply:
+            unfixed.append(issue["id"])
             continue
         fixes = issue.get("fixes") or []
         if not any(not f.get("manual") for f in fixes):

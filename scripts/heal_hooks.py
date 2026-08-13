@@ -324,7 +324,7 @@ def _hermes_install() -> str:
     # check existing cron job
     try:
         listed = subprocess.run(
-            ["hermes", "cron", "list"], capture_output=True, text=True, timeout=30
+            ["hermes", "cron", "list"], capture_output=True, text=True, errors="replace", timeout=30
         ).stdout
         if CRON_NAME in listed:
             return f"hermes: watchdog cron already registered ({CRON_NAME})"
@@ -351,7 +351,7 @@ def _hermes_uninstall() -> str:
         msgs.append("watchdog script removed")
     try:
         listed = subprocess.run(
-            ["hermes", "cron", "list"], capture_output=True, text=True, timeout=30
+            ["hermes", "cron", "list"], capture_output=True, text=True, errors="replace", timeout=30
         ).stdout
         if CRON_NAME in listed:
             subprocess.run(
@@ -400,7 +400,7 @@ def _opencode_status() -> str:
 def _hermes_status() -> str:
     try:
         listed = subprocess.run(
-            ["hermes", "cron", "list"], capture_output=True, text=True, timeout=30
+            ["hermes", "cron", "list"], capture_output=True, text=True, errors="replace", timeout=30
         ).stdout
         return f"registered ({CRON_NAME})" if CRON_NAME in listed else "not registered"
     except (FileNotFoundError, subprocess.SubprocessError):

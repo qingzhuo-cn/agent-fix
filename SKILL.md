@@ -62,6 +62,7 @@ at `--version`; auth/network issues only show up on a real call.
    | `provider-config` | no provider configured — set key/base URL/model for ANY provider (DeepSeek/OpenAI/Anthropic/Google/Ollama/...) |
    | `net-connectivity` | API endpoints unreachable — TCP/DNS/proxy layer under all agents |
    | `opencode-mcp-schema` | opencode.json MCP entry invalid (`type: stdio` / string `command` / missing `enabled`) → `ConfigInvalidError` incl. history |
+   | `deepseek-harness-broken` | `dsh` (DeepSeek Harness) won't boot — binary missing / Node too old / install incomplete |
 3. **Apply.** `./scripts/fix apply <id> --yes` (auto), or follow the doc's `## Fix`
    section manually. For `manual` fixes (node install, interactive login, native
    agent reinstall) the CLI prints the exact command — run it.
@@ -80,14 +81,15 @@ New agents are **data**, not code. Add one line to `catalog.json` → `agents`
 
 ## MCP server (any agent can call the toolbox directly)
 
-`mcp/server.py` is a zero-dependency MCP stdio server exposing 17 tools,
+`mcp/server.py` is a zero-dependency MCP stdio server exposing 19 tools,
 organized as a tree (see `mcp/README.md`): a registry declares every tool, a
-review gate validates each call, and six domain groups execute — agents
+review gate validates each call, and seven domain groups execute — agents
 (`fix_agents`, `version_check`, `watchdog_status`), configs (`config_audit`,
 `backup_configs`, `restore_configs`), providers (`provider_setup`,
 `deepseek_setup`), network (`net_diagnose`), diagnosis (`fix_doctor`,
 `fix_check`, `fix_info`, `log_triage`), repair (`fix_apply`, `self_heal`,
-`heal_hooks`), plus `court_status` (the toolbox map). Register it
+`heal_hooks`), harness (`dsh_diagnose`, `dsh_fix`), plus `court_status` (the
+toolbox map). Register it
 once, and Claude Code / OpenCode / Cursor / ZCode / Codex can call any tool as a
 native function — no SKILL.md loading needed:
 

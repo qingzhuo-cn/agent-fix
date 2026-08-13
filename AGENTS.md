@@ -18,7 +18,7 @@ the user points it at this repo.
 | `scripts/fix.py` | Cross-platform diagnostic/repair CLI + importable Python API (stdlib only) |
 | `scripts/fix` | Shell launcher for the CLI |
 | `SKILL.md` | Skill manifest (loadable by Hermes, Claude Code, OpenCode, Kimi Code, Pi, …) |
-| `mcp/server.py` | Zero-dependency MCP stdio server — 17 tools in a tree (registry → review gate → six domain groups: agents / configs / providers / network / diagnosis / repair) callable by ANY MCP-capable agent; `mcp/court/` holds the layers; `python mcp/smoke_test.py` regresses every tool |
+| `mcp/server.py` | Zero-dependency MCP stdio server — 19 tools in a tree (registry → review gate → six domain groups + harness: agents / configs / providers / network / diagnosis / repair / DeepSeek Harness) callable by ANY MCP-capable agent; `mcp/court/` holds the layers; `python mcp/smoke_test.py` regresses every tool |
 | `scripts/mcp_register.py` | register/unregister the MCP server with Claude Code / OpenCode / Cursor / Codex |
 | `install/` | One-command installers that deploy the skill into every detected agent |
 
@@ -45,6 +45,7 @@ the user points it at this repo.
    | `provider-config` | no provider configured — set key/base URL/model for ANY provider (DeepSeek/OpenAI/Anthropic/Google/Ollama/...) |
    | `net-connectivity` | API endpoints unreachable (TCP/DNS/proxy layer under all agents) |
    | `opencode-mcp-schema` | `opencode.json` MCP entry invalid (`type: stdio` / string `command` / missing `enabled`) → `ConfigInvalidError` on every opencode run incl. history |
+   | `deepseek-harness-broken` | `dsh` (DeepSeek Harness) won't boot — binary missing / Node too old / incomplete plugin bundles |
 
 3. **Apply the fix.** `./scripts/fix apply <id> --yes` auto-applies; manual fixes
    (node install, interactive login, native agent reinstall) print the exact
@@ -62,7 +63,8 @@ If an MCP-capable agent (Claude Code, OpenCode, Cursor, ZCode, Codex) is asking
 questions about this repo, it can also call the toolbox directly: register the
 server with `python scripts/mcp_register.py all`, then use tools `fix_doctor`,
 `fix_apply`, `net_diagnose`, `version_check`, `config_audit`, `log_triage`,
-`backup_configs`, `restore_configs`, `deepseek_setup` (see `mcp/README.md`).
+`backup_configs`, `restore_configs`, `deepseek_setup`, `dsh_diagnose`, `dsh_fix`
+(see `mcp/README.md`).
 
 ## Rules
 

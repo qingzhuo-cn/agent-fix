@@ -67,6 +67,25 @@ def _mask(secret: str) -> str:
     return secret[:5] + "***" + secret[-4:] if len(secret) > 10 else "***"
 
 
+# Common secret patterns (API keys / tokens). config_audit labels them; these
+# are used by _mask_secrets() to redact keys from arbitrary output (log_triage,
+# diagnosis detail) so the MCP never echoes a user's key.
+_SECRET_REGEXES = [
+    re.compile(r"\b(sk-[A-Za-z0-9_-]{16,})\b"),
+    re.compile(r"\b(gh[pousr]_[A-Za-z0-9]{20,})\b"),
+    re.compile(r"\b(github_pat_[A-Za-z0-9_]{20,})\b"),
+    re.compile(r"\b(AKIA[0-9A-Z]{16})\b"),
+    re.compile(r"\b(AIza[0-9A-Za-z_-]{20,})\b"),
+]
+
+
+def _mask_secrets(text: str) -> str:
+    """Redact known API-key/token patterns anywhere in a string (defense in depth)."""
+    for pat in _SECRET_REGEXES:
+        text = pat.sub(lambda m: _mask(m.group(0)), text)
+    return text
+
+
 # ---------------------------------------------------------------- path safety (zip-slip)
 
 

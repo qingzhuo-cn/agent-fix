@@ -25,3 +25,4 @@ from court.shangshu.hubu import backup_configs, config_audit, restore_configs  #
 from court.shangshu.libu_personnel import version_check, watchdog_status  # noqa: E402
 from court.shangshu.libu_rites import deepseek_setup, provider_setup  # noqa: E402
 from court.shangshu.xingbu import log_triage  # noqa: E402
+from court.shangshu.taipu import dsh_diagnose, dsh_fix  # noqa: E402

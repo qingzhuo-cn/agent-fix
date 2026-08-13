@@ -1,6 +1,6 @@
 {
   "name": "agent-fix",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "Universal diagnostic/fix catalog for ALL AI coding agents (Claude Code, Codex, OpenCode, Hermes, Kimi Code, Pi, ZCode, Cursor, ...) — plus MCP server, branch skills, any-provider config, and network diagnostics",
   "agents": {
     "claude-code":  { "name": "Claude Code",          "bin": ["claude"],            "config": "~/.claude",             "skills": "~/.claude/skills",        "npm_pkg": "@anthropic-ai/claude-code", "provider_env": ["ANTHROPIC_BASE_URL", "ANTHROPIC_AUTH_TOKEN"], "home": "https://docs.anthropic.com/claude-code" },
@@ -9,8 +9,8 @@
     "hermes":       { "name": "Hermes Agent",          "bin": ["hermes"],            "config": "~/.local/share/hermes", "config_win": "$LOCALAPPDATA/hermes", "skills": "~/.local/share/hermes/skills", "npm_pkg": null,                       "provider_env": [], "home": "https://hermes-agent.nousresearch.com" },
     "kimi-code":    { "name": "Kimi Code",             "bin": ["kimi"],              "config": "~/.kimi-code",          "skills": "~/.kimi-code/skills",      "npm_pkg": null,                       "provider_env": ["KIMI_API_KEY"], "home": "https://kimi.com/code" },
     "pi":           { "name": "Pi (pi-coding-agent)",  "bin": ["pi"],                "config": "~/.pi",                 "skills": "~/.pi/agent/skills",       "npm_pkg": "@earendil-works/pi-coding-agent", "provider_env": ["OPENAI_API_KEY", "ANTHROPIC_API_KEY"], "home": "https://pi.dev" },
-    "zcode":        { "name": "ZCode",                 "bin": ["zcode"],             "config": "~/.zcode",              "skills": "~/.agents/skills",         "npm_pkg": null,                       "provider_env": [], "home": "https://zcode.ai" },
-    "cursor":       { "name": "Cursor",                "bin": ["cursor"],            "config": "~/.cursor",             "skills": "~/.cursor/skills",         "npm_pkg": null,                       "provider_env": [], "home": "https://cursor.com" },
+    "zcode":        { "name": "ZCode",                 "bin": ["zcode"],             "config": "~/.zcode",              "skills": "~/.agents/skills",         "npm_pkg": null,                       "provider_env": [], "no_version": true, "home": "https://zcode.ai" },
+    "cursor":       { "name": "Cursor",                "bin": ["cursor"],            "config": "~/.cursor",             "skills": "~/.cursor/skills",         "npm_pkg": null,                       "provider_env": [], "no_version": true, "home": "https://cursor.com" },
     "gemini":       { "name": "Gemini CLI",            "bin": ["gemini"],            "config": "~/.gemini",             "skills": null,                      "npm_pkg": "@google/gemini-cli",       "provider_env": ["GEMINI_API_KEY"], "home": "https://github.com/google-gemini/gemini-cli" },
     "aider":        { "name": "Aider",                 "bin": ["aider"],             "config": "~/.config/aider",       "skills": null,                      "npm_pkg": null,                       "provider_env": ["OPENAI_API_KEY"], "home": "https://aider.chat" },
     "qwen-code":    { "name": "Qwen Code",             "bin": ["qwen-code"],         "config": "~/.qwen-code",          "skills": null,                      "npm_pkg": "@qwen-code/qwen-code",     "provider_env": ["DASHSCOPE_API_KEY"], "home": "https://qwen.ai" },
@@ -48,7 +48,7 @@
         }
       ],
       "verify": [
-        { "name": "{name} --version", "cmd": "{bin} --version 2>&1 || true" }
+        { "name": "{name} --version", "cmd": "{bin} --version 2>&1" }
       ],
       "doc": "fixes/npm-postinstall.md"
     },
@@ -64,13 +64,13 @@
         {
           "name": "npm global dir in GUI PATH",
           "platform": "windows",
-          "cmd": "{ reg query \"HKCU\\Environment\" /v Path 2>/dev/null; reg query \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment\" /v Path 2>/dev/null; } | tr -d '\\r' | grep -qiE 'npm' && echo FOUND || echo MISSING",
+          "cmd": "powershell -NoProfile -Command \"\\$d=[Environment]::GetEnvironmentVariable('Path','User')+';'+[Environment]::GetEnvironmentVariable('Path','Machine');if(\\$d -match 'npm'){Write-Output 'FOUND'}else{Write-Output 'MISSING'}\"",
           "pass": { "stdout_contains": ["FOUND"] }
         },
         {
           "name": "hermes bin dir in GUI PATH",
           "platform": "windows",
-          "cmd": "{ reg query \"HKCU\\Environment\" /v Path 2>/dev/null; reg query \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment\" /v Path 2>/dev/null; } | tr -d '\\r' | grep -qiE 'hermes' && echo FOUND || echo MISSING",
+          "cmd": "powershell -NoProfile -Command \"\\$d=[Environment]::GetEnvironmentVariable('Path','User')+';'+[Environment]::GetEnvironmentVariable('Path','Machine');if(\\$d -match 'hermes'){Write-Output 'FOUND'}else{Write-Output 'MISSING'}\"",
           "pass": { "stdout_contains": ["FOUND"] }
         }
       ],
@@ -90,12 +90,12 @@
         {
           "name": "npm dir visible to GUI PATH",
           "platform": "windows",
-          "cmd": "{ reg query \"HKCU\\Environment\" /v Path 2>/dev/null; reg query \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment\" /v Path 2>/dev/null; } | tr -d '\\r' | grep -qiE 'npm' && echo OK || echo STILL-MISSING"
+          "cmd": "powershell -NoProfile -Command \"\\$d=[Environment]::GetEnvironmentVariable('Path','User')+';'+[Environment]::GetEnvironmentVariable('Path','Machine');if(\\$d -match 'npm'){Write-Output 'OK'}else{Write-Output 'STILL-MISSING'}\""
         },
         {
           "name": "hermes dir visible to GUI PATH",
           "platform": "windows",
-          "cmd": "{ reg query \"HKCU\\Environment\" /v Path 2>/dev/null; reg query \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment\" /v Path 2>/dev/null; } | tr -d '\\r' | grep -qiE 'hermes' && echo OK || echo STILL-MISSING"
+          "cmd": "powershell -NoProfile -Command \"\\$d=[Environment]::GetEnvironmentVariable('Path','User')+';'+[Environment]::GetEnvironmentVariable('Path','Machine');if(\\$d -match 'hermes'){Write-Output 'OK'}else{Write-Output 'STILL-MISSING'}\""
         }
       ],
       "doc": "fixes/gui-path.md"
@@ -156,7 +156,7 @@
       ],
       "verify": [
         { "name": "npm config get registry", "cmd": "npm config get registry 2>&1" },
-        { "name": "npm ping", "cmd": "npm ping 2>&1 || true", "timeout": 45 }
+        { "name": "npm ping", "cmd": "npm ping 2>&1", "timeout": 45 }
       ],
       "doc": "fixes/npm-registry.md"
     },
@@ -231,7 +231,7 @@
       "checks": [
         {
           "name": "{name} binary runs",
-          "cmd": "{bin} --version 2>&1 || {bin} --help 2>&1 || true",
+          "cmd": "{bin} --version 2>&1 || true",
           "pass": {
             "stdout_not_contains": [
               "postinstall script was not run",
@@ -262,7 +262,7 @@
         }
       ],
       "verify": [
-        { "name": "{name} --version", "cmd": "{bin} --version 2>&1 || true" }
+        { "name": "{name} --version", "cmd": "{bin} --version 2>&1" }
       ],
       "doc": "fixes/agent-matrix.md"
     },
@@ -331,6 +331,50 @@
         { "name": "opencode smoke run", "cmd": "opencode run 'Respond with exactly: OK' 2>&1 | tail -3" }
       ],
       "doc": "fixes/opencode-mcp-schema.md"
+    },
+    {
+      "id": "deepseek-harness-broken",
+      "title": "DeepSeek Harness (dsh) broken — binary missing / engine too old / install incomplete",
+      "agents": ["dsh"],
+      "symptoms": [
+        "dsh --version fails with 'not recognized' / 'command not found' / 'Cannot find module'",
+        "dsh web or dsh --profile ... fails to boot with EBADENGINE or a missing plugin bundle",
+        "after `npm i -g @deepseek-ai/dsh` the dsh command does not appear on PATH"
+      ],
+      "checks": [
+        {
+          "name": "dsh binary runs",
+          "cmd": "dsh --version 2>&1 || true",
+          "pass": { "stdout_not_contains": ["not recognized", "command not found", "cannot find module", "internal/modules/cjs/loader", "node:internal"] }
+        },
+        {
+          "name": "node engine ok (major >= 20)",
+          "cmd": "node -e \"const m=Number(process.versions.node.split('.')[0]);process.exit(m>=20?0:1)\"",
+          "pass": { "exit": 0 }
+        },
+        {
+          "name": "@deepseek-ai/dsh package installed (global)",
+          "cmd": "node -e \"const{execSync}=require('child_process');const root=execSync('npm root -g').toString().trim();const p=root+'/@deepseek-ai/dsh/package.json';require('fs').accessSync(p);console.log('FOUND '+p)\" 2>&1 || true",
+          "pass": { "stdout_contains": ["FOUND"] }
+        }
+      ],
+      "fixes": [
+        {
+          "name": "Reinstall @deepseek-ai/dsh globally (rebuilds bundles + deps)",
+          "cmd": "npm install -g @deepseek-ai/dsh",
+          "timeout": 900
+        },
+        {
+          "name": "Node too old — install Node LTS (manual, see doc)",
+          "manual": true,
+          "cmd": "echo 'Manual step: install Node LTS (nvm install lts && nvm use lts), then reinstall @deepseek-ai/dsh. See fixes/deepseek-harness.md'"
+        }
+      ],
+      "verify": [
+        { "name": "dsh --version", "cmd": "dsh --version 2>&1" },
+        { "name": "dsh --help (boot smoke)", "cmd": "dsh --help 2>&1" }
+      ],
+      "doc": "fixes/deepseek-harness.md"
     }
   ]
 }

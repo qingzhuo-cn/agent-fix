@@ -69,7 +69,7 @@ def provider_setup(
     model_id = _sanitize_id(model) or "custom"
 
     lines = [
-        f"PROVIDER SETUP: {provider}  (base={base}, model={model}, key={api_key[:5] + '***' + api_key[-4:] if api_key else '(local)'})",
+        f"PROVIDER SETUP: {provider}  (base={base}, model={model}, key={_mask(api_key) if api_key else '(local)'})",
         "",
     ]
     for agent in _detect_agents():
