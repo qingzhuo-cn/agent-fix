@@ -15,18 +15,18 @@ jobs:
           python-version: "3.11"
       - name: Validate catalog.json
         run: python -c "import json; c=json.load(open('catalog.json')); assert len(c.get('agents',{}))>=10; print('catalog.json OK,', len(c['agents']), 'agents,', len(c['issues']), 'issues')"
-      - name: Compile fix.py
-        run: python -m py_compile scripts/fix.py
+      - name: Compile the package
+        run: python -m py_compile scripts/fix.py mcp/server.py agentfix/*.py
       - name: fix list
         run: python scripts/fix.py list
       - name: fix agents (registry smoke)
         run: python scripts/fix.py agents
-      - name: netcheck engine smoke (does not gate on reachability)
+      - name: network engine smoke (does not gate on reachability)
         run: |
-          python scripts/netcheck.py --timeout 3 > /tmp/net.txt || true
+          python scripts/fix.py net --timeout 3 > /tmp/net.txt || true
           grep -q "NETWORK DIAGNOSTIC" /tmp/net.txt
           grep -q "deepseek" /tmp/net.txt
-          echo "netcheck engine OK"
+          echo "network engine OK"
       - name: MCP server handshake + tools smoke test
         run: |
           python - <<'EOF'
@@ -34,8 +34,8 @@ jobs:
           reqs = [
             {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05"}},
             {"jsonrpc":"2.0","id":2,"method":"tools/list"},
-            {"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"fix_agents","arguments":{}}},
-            {"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"net_diagnose","arguments":{"timeout":2}}},
+            {"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"agents","arguments":{}}},
+            {"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"net","arguments":{"timeout":2}}},
           ]
           p = subprocess.run([sys.executable, "mcp/server.py"], input="\n".join(json.dumps(r) for r in reqs),
                              capture_output=True, text=True, timeout=120)
@@ -43,24 +43,41 @@ jobs:
           replies = {json.loads(l)["id"]: json.loads(l) for l in p.stdout.splitlines() if l.strip()}
           assert replies[1]["result"]["serverInfo"]["name"] == "agent-fix"
           names = [t["name"] for t in replies[2]["result"]["tools"]]
-          assert len(names) >= 13, names
-          assert "fix_doctor" in names and "net_diagnose" in names and "deepseek_setup" in names
-          assert "provider_setup" in names and "fix_agents" in names and "self_heal" in names
+          assert len(names) >= 12, names
+          for tool in ("doctor", "check", "apply", "info", "agents", "net", "audit", "backup", "restore", "provider", "hooks", "self_heal"):
+              assert tool in names, f"missing tool: {tool}"
           assert not replies[3]["result"].get("isError")
           assert not replies[4]["result"].get("isError")
-          print(f"MCP OK — {len(names)} tools, handshake + fix_agents + net_diagnose")
+          print(f"MCP OK — {len(names)} tools, handshake + agents + net")
+          EOF
+      - name: MCP notification discipline (no reply to notifications)
+        run: |
+          python - <<'EOF'
+          import json, subprocess, sys
+          reqs = [
+            {"jsonrpc":"2.0","method":"notifications/initialized"},
+            {"jsonrpc":"2.0","id":1,"method":"initialize","params":{}},
+          ]
+          p = subprocess.run([sys.executable, "mcp/server.py"], input="\n".join(json.dumps(r) for r in reqs),
+                             capture_output=True, text=True, timeout=60)
+          lines = [l for l in p.stdout.splitlines() if l.strip()]
+          assert len(lines) == 1, f"expected exactly one reply, got {len(lines)}"
+          assert json.loads(lines[0])["id"] == 1
+          print("notification discipline OK")
           EOF
       - name: fix check node-version-too-old (node 20+ preinstalled on runner)
         run: python scripts/fix.py check node-version-too-old
       - name: importable API smoke test
         run: |
           python - <<'EOF'
-          import sys
-          sys.path.insert(0, 'scripts')
-          from fix import load_catalog, check_issue, detect_agents
-          cat = load_catalog()
+          from agentfix import catalog, engine
+          cat = catalog.load_catalog()
           print('issues:', len(cat['issues']))
           assert len(cat['issues']) >= 7
           assert len(cat.get('agents', {})) >= 10
-          print('detected agents here:', [a['id'] for a in detect_agents(cat)])
+          print('detected agents here:', [a['id'] for a in catalog.detect_agents(cat)])
+          state = engine.check_issue(next(i for i in cat['issues'] if i['id'] == 'node-version-too-old'), quiet=True)
+          print('node-version check:', 'broken' if state['broken'] else 'healthy')
           EOF
+      - name: MCP regression harness (fast tools)
+        run: python mcp/smoke_test.py --quick
