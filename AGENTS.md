@@ -15,12 +15,12 @@ the user points it at this repo.
 |------|---------|
 | `fixes/*.md` | Human/agent-readable knowledge base — one doc per problem class, with Check / Fix / Verify sections |
 | `catalog.json` | Machine-readable catalog (single source of truth) **including the agent registry** |
-| `scripts/fix.py` | Cross-platform diagnostic/repair CLI + importable Python API (stdlib only) |
+| `agentfix/` | The engine package: `catalog.py` (registry/paths), `engine.py` (checks/fixes/diagnostics), `hooks.py` (hooks/MCP/install), `mcp.py` (MCP server), `cli.py`, `report.py` (secret masking) |
+| `scripts/fix.py` | CLI entry point (thin launcher over `agentfix.cli`; stdlib only) |
 | `scripts/fix` | Shell launcher for the CLI |
 | `SKILL.md` | Skill manifest (loadable by Hermes, Claude Code, OpenCode, Kimi Code, Pi, …) |
-| `mcp/server.py` | Zero-dependency MCP stdio server — 19 tools in a tree (registry → review gate → six domain groups + harness: agents / configs / providers / network / diagnosis / repair / DeepSeek Harness) callable by ANY MCP-capable agent; `mcp/court/` holds the layers; `python mcp/smoke_test.py` regresses every tool |
-| `scripts/mcp_register.py` | register/unregister the MCP server with Claude Code / OpenCode / Cursor / Codex |
-| `install/` | One-command installers that deploy the skill into every detected agent |
+| `mcp/server.py` | Zero-dependency MCP stdio server — 14 generic verb tools (`doctor`/`check`/`apply`/`info`/`agents`/`versions`/`net`/`logs`/`audit`/`backup`/`restore`/`provider`/`hooks`/`self_heal`); `python mcp/smoke_test.py` regresses every tool |
+| `install/` | Thin bootstrap installers (`install.sh` / `install.ps1` → `fix install`) |
 
 ## The fix protocol (follow in this order)
 
@@ -61,10 +61,10 @@ the user points it at this repo.
 
 If an MCP-capable agent (Claude Code, OpenCode, Cursor, ZCode, Codex) is asking
 questions about this repo, it can also call the toolbox directly: register the
-server with `python scripts/mcp_register.py all`, then use tools `fix_doctor`,
-`fix_apply`, `net_diagnose`, `version_check`, `config_audit`, `log_triage`,
-`backup_configs`, `restore_configs`, `deepseek_setup`, `dsh_diagnose`, `dsh_fix`
-(see `mcp/README.md`).
+server with `python scripts/fix.py mcp register`, then use tools `doctor`,
+`check`, `apply`, `info`, `agents`, `versions`, `net`, `logs`, `audit`,
+`backup`, `restore`, `provider`, `hooks`, `self_heal` (see `mcp/README.md`).
+Mutating tools are dry-run by default; they need `confirm=true` / `apply=true`.
 
 ## Rules
 

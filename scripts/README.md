@@ -3,7 +3,9 @@
 The `fix` CLI is the machine side of the `agent-fix` skill. It reads
 [`../catalog.json`](../catalog.json) (same knowledge as the `fixes/*.md` docs) and
 can diagnose + repair agent installs from a terminal, a cron job, a CI step, or any
-program.
+program. The implementation lives in the [`../agentfix/`](../agentfix/) package;
+`scripts/fix.py` is a thin launcher, so the same entry works from a repo checkout
+and from a deployed skill copy.
 
 ## Requirements
 
@@ -24,13 +26,17 @@ ln -s "$(pwd)/scripts/fix" ~/.local/bin/fix   # or add scripts/ to PATH
 | Command | What it does | Exit code |
 |---------|--------------|-----------|
 | `fix list` | list every known issue in the catalog | 0 |
-| `fix agents` | list the agent registry and which agents are installed | 0 |
+| `fix agents` | list the agents installed on this machine | 0 |
 | `fix check` | run all diagnostics (including per-agent binary checks) | 0 healthy / 1 broken |
 | `fix check <id> [<id>...]` | run diagnostics for specific issues | 0 / 1 |
 | `fix doctor` | alias for `fix check` | 0 / 1 |
 | `fix apply <id> [--yes]` | apply fixes for one issue, then verify | 0 verified |
 | `fix auto` | check all → auto-apply fixes for broken ones (watchdog mode) | 0 all fixed |
 | `fix info <id>` | print the matching doc from `../fixes/` | 0 |
+| `fix net [--timeout N]` | network diagnostics (TCP connectivity + proxy env) | 0 reachable |
+| `fix hooks install\|uninstall\|status [--agent id]` | manage the self-heal startup hooks | 0 |
+| `fix mcp register\|remove [agent]` | manage MCP server registration | 0 |
+| `fix install` / `fix uninstall` | deploy/remove the whole skill (copies, hooks, MCP, CLI) | 0 |
 | `fix --json ...` | machine-readable output on supported commands | — |
 
 The catalog ships an **agent registry** (`catalog.json` → `agents`): add an agent
@@ -39,10 +45,10 @@ starts checking it automatically. `agent-broken-generic` is the dynamic issue th
 verifies `--version` for every detected agent and repairs npm-installed agents by
 re-running their postinstall/install script.
 
-`net-connectivity` uses the shared `scripts/netcheck.py` engine (hard-timeout TCP
-checks via non-blocking connect + select, so unreachable hosts cost exactly the
-timeout, not ~30s of Windows SYN retries). The MCP `net_diagnose` tool calls the
-same engine.
+`net-connectivity` uses the built-in engine in `agentfix/engine.py` (hard-timeout
+TCP checks via non-blocking connect + select, so unreachable hosts cost exactly
+the timeout, not ~30s of Windows SYN retries). The MCP `net` tool calls the same
+engine.
 
 `fix check` and `fix auto` exit non-zero when something is broken, so they drop
 straight into scripts:
@@ -57,18 +63,19 @@ opencode() { command opencode --version >/dev/null 2>&1 || fix apply npm-postins
 
 ## Using it from programs
 
-`fix.py` is a normal module — import it:
+The package is a normal Python package — import it:
 
 ```python
 import sys
-sys.path.insert(0, "/path/to/agent-fix-skill/scripts")
-from fix import load_catalog, check_issue, apply_issue, auto_fix
+sys.path.insert(0, "/path/to/agent-fix-skill")
+from agentfix import catalog, engine
 
-catalog = load_catalog()
-state = check_issue(next(i for i in catalog["issues"] if i["id"] == "npm-postinstall-skipped"), quiet=True)
+cat = catalog.load_catalog()
+issue = next(i for i in cat["issues"] if i["id"] == "npm-postinstall-skipped")
+state = engine.check_issue(issue, quiet=True)
 print("broken" if state["broken"] else "healthy")
 
-outcome = apply_issue(state_issue, yes=True, quiet=True)
+outcome = engine.apply_issue(issue, yes=True, quiet=True)
 ```
 
 Or call it as a subprocess with `--json`:

@@ -1,7 +1,7 @@
 ---
 name: agent-fix
-description: "Use when ANY AI coding agent (Claude Code, Codex, OpenCode, Hermes, Kimi Code, Pi, ZCode, Cursor, Gemini CLI, ...) is broken or misconfigured: native binary missing after npm install/upgrade, GUI tools (CC-Switch) report 'installed but cannot run', Node too old, npm registry slow/unreachable, agent auth failures, or pointing any agent at the DeepSeek API. Run `fix agents` to see installed agents, `fix doctor` to diagnose, read the matching fixes/*.md doc, apply the fix, then verify with a real command. An MCP server (mcp/server.py) exposes the same tools plus net_diagnose/version_check/config_audit/log_triage/backup/restore/deepseek_setup to any MCP-capable agent."
-version: 1.6.0
+description: "Use when ANY AI coding agent (Claude Code, Codex, OpenCode, Hermes, Kimi Code, Pi, ZCode, Cursor, Gemini CLI, ...) is broken or misconfigured: native binary missing after npm install/upgrade, GUI tools (CC-Switch) report 'installed but cannot run', Node too old, npm registry slow/unreachable, agent auth failures, or pointing any agent at the DeepSeek API. Run `fix agents` to see installed agents, `fix doctor` to diagnose, read the matching fixes/*.md doc, apply the fix, then verify with a real command. An MCP server (mcp/server.py) exposes the same toolbox (doctor/check/apply/info/agents/versions/net/logs/audit/backup/restore/provider/hooks/self_heal) to any MCP-capable agent."
+version: 2.0.0
 author: agent-fix contributors
 license: MIT
 metadata:
@@ -81,26 +81,23 @@ New agents are **data**, not code. Add one line to `catalog.json` → `agents`
 
 ## MCP server (any agent can call the toolbox directly)
 
-`mcp/server.py` is a zero-dependency MCP stdio server exposing 19 tools,
-organized as a tree (see `mcp/README.md`): a registry declares every tool, a
-review gate validates each call, and seven domain groups execute — agents
-(`fix_agents`, `version_check`, `watchdog_status`), configs (`config_audit`,
-`backup_configs`, `restore_configs`), providers (`provider_setup`,
-`deepseek_setup`), network (`net_diagnose`), diagnosis (`fix_doctor`,
-`fix_check`, `fix_info`, `log_triage`), repair (`fix_apply`, `self_heal`,
-`heal_hooks`), harness (`dsh_diagnose`, `dsh_fix`), plus `court_status` (the
-toolbox map). Register it
-once, and Claude Code / OpenCode / Cursor / ZCode / Codex can call any tool as a
-native function — no SKILL.md loading needed:
+`mcp/server.py` is a zero-dependency MCP stdio server exposing 14 generic verb
+tools (see `mcp/README.md`): `doctor`, `check`, `apply`, `info`, `agents`,
+`versions`, `net`, `logs`, `audit`, `backup`, `restore`, `provider`, `hooks`,
+`self_heal`. The catalog's issue ids are the arguments, so new catalog issues
+are callable without any new tool code. Mutating tools (`apply`, `self_heal`,
+`restore`) are **dry-run by default** and need an explicit `confirm`/`apply`
+flag. Register it once, and Claude Code / OpenCode / Cursor / ZCode / Codex can
+call any tool as a native function — no SKILL.md loading needed:
 
 ```bash
-python scripts/mcp_register.py all          # register with every installed agent
-claude mcp list | grep agent-fix            # verify: ✔ Connected
+python scripts/fix.py mcp register         # register with every installed agent
+claude mcp list | grep agent-fix           # verify: ✔ Connected
 ```
 
 See `mcp/README.md` for the tool table, manual registration per agent, and example
-prompts ("run fix_doctor", "net_diagnose — is DeepSeek reachable?", "backup_configs
-before upgrading"). The installers register MCP automatically.
+prompts ("run doctor", "net — is DeepSeek reachable?", "backup before upgrading").
+The installers register MCP automatically.
 
 ## Recurring real-world case
 
@@ -118,9 +115,9 @@ auto-repairs what's broken; it exits non-zero when something is still broken.
 
 ## Self-heal on agent start (zero-touch repairs)
 
-Since v1.5.0 the installers also register a **startup hook** per agent, so every
-time the user launches an agent it checks itself and auto-repairs what's broken
-— no manual `fix doctor` needed:
+The installers also register a **startup hook** per agent (declared per agent in
+`catalog.json` → `hook`), so every time the user launches an agent it checks
+itself and auto-repairs what's broken — no manual `fix doctor` needed:
 
 | Agent | Mechanism |
 |-------|-----------|
@@ -128,23 +125,23 @@ time the user launches an agent it checks itself and auto-repairs what's broken
 | Codex CLI | `~/.codex/config.toml` → `[hooks] session_start` runs `fix selfheal` |
 | OpenCode | `~/.config/opencode/plugins/agent-fix-selfheal.js` (fires on `session.created`) |
 | Hermes | daily `hermes cron` watchdog job (`agent-fix-watchdog`, no-agent, silent unless broken) |
-| kimi-code / pi / zcode / cursor / gemini / aider / qwen-code | no hook API — AGENTS.md instruction covers on-demand repair |
+| kimi-code / pi / zcode / cursor / gemini / aider / qwen-code / amp / droid | no hook API — AGENTS.md instruction covers on-demand repair |
 
-`fix selfheal` (scripts/fix.py) runs every catalog check, auto-applies fixes for
-anything broken, prints **nothing when healthy** (hooks stay quiet) and self-
-aborts after a hard deadline so it never blocks an agent from starting.
+`fix selfheal` runs every catalog check, auto-applies fixes for anything broken,
+prints **nothing when healthy** (hooks stay quiet) and self-aborts after a hard
+deadline so it never blocks an agent from starting.
 
 Manage it yourself:
 
 ```bash
-python scripts/heal_hooks.py status            # what's registered
-python scripts/heal_hooks.py install           # register (idempotent, auto-run by installers)
-python scripts/heal_hooks.py uninstall         # remove every agent-fix hook
-python scripts/heal_hooks.py install --agent claude-code   # one agent only
+python scripts/fix.py hooks status              # what's registered
+python scripts/fix.py hooks install             # register (idempotent, auto-run by installers)
+python scripts/fix.py hooks uninstall           # remove every agent-fix hook
+python scripts/fix.py hooks install --agent claude-code   # one agent only
 ```
 
-Every config write is marker-tagged and backed up (`*.agent-fix-bak`) before
-first modification; re-running install after `git pull` is safe.
+Every config write is marker-tagged, atomic and backed up (`*.agent-fix-bak`)
+before first modification; re-running install after `git pull` is safe.
 
 ## Per-agent installation (how this skill gets loaded)
 
@@ -159,9 +156,16 @@ first modification; re-running install after `git pull` is safe.
 | ZCode & shared | `~/.agents/skills/agent-fix/` | `SKILL.md` |
 | Cursor / others | repo root | `AGENTS.md` (auto-read) |
 
-The installers in `install/` do this for you: `install/install.sh` (POSIX) and
-`install/install.ps1` (Windows) detect installed agents and copy the skill + CLI
-into each. Re-run after `git pull` to update.
+One command deploys everything (skill copies, AGENTS.md hooks, startup hooks,
+MCP registration, the `fix` CLI shim) — driven entirely by `catalog.json`:
+
+```bash
+install/install.sh        # POSIX (or Git Bash on Windows)
+install/install.ps1       # Windows PowerShell
+python scripts/fix.py uninstall    # exact inverse
+```
+
+Re-run after `git pull` to update.
 
 ## Common Pitfalls
 

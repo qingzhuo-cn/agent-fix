@@ -30,7 +30,7 @@ Codex、OpenCode、Hermes、Kimi Code、Pi、ZCode、Cursor、Gemini CLI、Aider
   - [兼容性矩阵](#兼容性矩阵)
   - [问题目录](#问题目录)
   - [在程序中调用](#在程序中调用)
-  - [MCP server（任意 agent 可调用的 19 个工具）](#mcp-server任意-agent-可调用的-19-个工具)
+  - [MCP server（任意 agent 可调用的 14 个工具）](#mcp-server任意-agent-可调用的-14-个工具)
 - [工作原理](#工作原理)
 - [扩展目录](#扩展目录)
 - [常见问题 FAQ](#常见问题-faq)
@@ -65,13 +65,13 @@ AI 编程 Agent 通常通过 npm、图形切换工具（如 CC-Switch）、版�
   agent**，而不只是四大主流。新增 agent = 一行数据，零代码
 - 🖥️ **跨平台** — Windows（含 Git Bash、WSL 兼容）、macOS、Linux
 - 🧩 **技能 + CLI + API 三合一** — 可作为 skill 被 Agent 加载，可在终端调用，也可作为 Python 模块导入
-- ⚡ **MCP server** — 零依赖 stdio MCP server（`mcp/server.py`，19 个工具）按清晰的树状结构组织（注册表 → 审核层 → 六大领域分组 + DeepSeek Harness 办事处），让 Claude Code、OpenCode、Cursor、ZCode、Codex 把 `fix_doctor`、`net_diagnose`、`provider_setup`、`dsh_fix`… 当原生工具直接调用；`python mcp/smoke_test.py` 一键回归全部工具
+- ⚡ **MCP server** — 零依赖 stdio MCP server（`mcp/server.py`，14 个通用动词工具 + 审核门），让 Claude Code、OpenCode、Cursor、ZCode、Codex 把 `doctor`、`check`、`apply`、`net`、`provider`… 当原生工具直接调用；catalog 的 issue id 就是参数，新增问题无需新增工具代码；`python mcp/smoke_test.py` 一键回归全部工具
 - 📦 **零依赖** — 纯 Python 3.8+ 标准库
 - 🔁 **可做看门狗** — `fix auto` 自动体检并自动修复；失败时非零退出，可直接挂 cron/CI
 - 💉 **启动即自愈** — 安装器会自动注册各 Agent 的启动钩子（Claude Code `SessionStart`、Codex `[hooks] session_start`、OpenCode 插件、Hermes cron 看门狗），每次启动 agent 自动体检+修复；`fix selfheal` 健康时零输出，绝不打扰
 - 🧪 **修复必验证** — 每个修复都以真实命令验证收尾，而不是只跑 `--version`
-- 🔌 **DeepSeek Harness（`dsh`）修复** — `deepseek-harness-broken` 诊断损坏的 `dsh` 启动器（二进制缺失 / Node 过旧 / 插件包不完整）；`dsh_diagnose` + `dsh_fix` 通过 MCP 或 CLI 修复并验证
-- 🔐 **默认脱敏** — 所有输出都会对 API key / token 脱敏（`config_audit`、`log_triage`、诊断详情、代理凭据）；provider 密钥默认打码，除非显式 `show_key=true`；配置备份 `chmod 600`
+- 🔌 **DeepSeek Harness（`dsh`）修复** — `deepseek-harness-broken` 诊断损坏的 `dsh` 启动器（二进制缺失 / Node 过旧 / 插件包不完整）；诊断自动完成，重装为文档化手动步骤 —— 工具只诊断和验证，绝不代装任何 agent
+- 🔐 **默认脱敏** — 所有输出都会对 API key / token 脱敏（`audit`、`logs`、诊断详情、代理凭据）；provider 密钥默认打码，除非显式 `show_key=true`；配置备份 `chmod 600`
 
 ## 快速开始
 
@@ -100,7 +100,7 @@ npm/node/registry 类检查回退到 cmd.exe）。
 | 命令 | 作用 | 退出码 |
 |------|------|--------|
 | `fix list` | 列出目录中的全部问题 | 0 |
-| `fix agents` | 列出 agent 注册表及本机已安装的 agent | 0 |
+| `fix agents` | 列出本机已安装的 agent | 0 |
 | `fix check` | 运行全部诊断（含每个已装 agent 的二进制检查） | 0 健康 / 1 有问题 |
 | `fix check <id>...` | 只诊断指定问题 | 0 / 1 |
 | `fix doctor` | `fix check` 的别名 | 0 / 1 |
@@ -185,53 +185,47 @@ out = subprocess.run(["fix", "check", "--json"], capture_output=True, text=True)
 report = json.loads(out.stdout)
 ```
 
-### MCP server（任意 agent 可调用的 19 个工具）
+### MCP server（任意 agent 可调用的 14 个工具）
 
 同一套工具箱以 MCP server 形式暴露，**任何支持 MCP 的 agent**（Claude Code、
-OpenCode、Cursor、ZCode、Codex）都能把它当原生工具调用。server 按树状结构
-组织——注册表声明工具、审核层校验每次调用、六大领域分组 + DeepSeek Harness 办事处负责执行：
+OpenCode、Cursor、ZCode、Codex）都能把它当原生工具调用。14 个通用动词工具 +
+一层审核门（类型强转、否决、错误包装），输出统一走共享的密钥脱敏：
 
-| 分组 | 工具 |
+| 工具 | 用途 |
 |------|------|
-| Agents | `fix_agents`、`version_check`、`watchdog_status` |
-| Configs | `config_audit`、`backup_configs`、`restore_configs` |
-| Providers | `provider_setup`、`deepseek_setup` |
-| Network | `net_diagnose`（端点延迟+代理） |
-| Diagnosis | `fix_doctor`、`fix_check`、`fix_info`、`log_triage` |
-| Repair | `fix_apply`、`self_heal`、`heal_hooks` |
-| Harness (DeepSeek) | `dsh_diagnose`、`dsh_fix` |
+| `doctor` / `check` / `apply` / `info` | 全面诊断 / 单项诊断 / 修复单项（`confirm=true` 才执行）/ 读文档 |
+| `agents` / `versions` | 装了哪些 agent / 已装 vs 最新（GUI 应用绝不探测） |
+| `net` / `logs` | 端点连通性+代理 / 最近的 ERROR 日志 |
+| `audit` / `backup` / `restore` | 配置解析错误+泄露密钥 / 快照 / 恢复（需 `confirm=true`） |
+| `provider` | 任意 provider 的各 agent 配置片段（密钥默认打码） |
+| `hooks` / `self_heal` | 启动钩子管理 / 自愈流水线（`apply=true` 才修复） |
 
-另有 `court_status`——工具箱地图，可作为工具直接调用。
+`check`/`apply`/`info` 的参数就是 catalog 里的 issue id，因此新增问题无需新增
+工具代码。所有会改状态的工具**默认 dry-run**。
 `python mcp/smoke_test.py` 一键回归全部工具。
-所有工具都会在输出中对 API key / token 脱敏 —— 见 `mcp/README.md` 安全说明。
-
-（模块保留了唐代三省六部的拼音命名，算是一点文化彩蛋：
-`court/shangshu/libu_personnel.py`=Agents、`hubu.py`=Configs、
-`libu_rites.py`=Providers、`bingbu.py`=Network、`xingbu.py`=Diagnosis、
-`gongbu.py`=Repair、`taipu.py`=DeepSeek Harness 办事处。架构详见 `mcp/README.md`。）
 
 ```bash
-python scripts/mcp_register.py all        # 向所有已装 agent 注册
+python scripts/fix.py mcp register        # 向所有已装 agent 注册
 claude mcp list | grep agent-fix          # 验证: ✔ Connected
 ```
 
-然后直接对你的 agent 说话：*"run fix_doctor and tell me what's broken"*、
-*"net_diagnose — is DeepSeek reachable?"*、*"backup_configs before I upgrade"*、
-*"deepseek_setup with key sk-…"*。完整文档：[mcp/README.md](mcp/README.md)。
+然后直接对你的 agent 说话：*"run doctor and tell me what's broken"*、
+*"net — is DeepSeek reachable?"*、*"backup before I upgrade"*、
+*"provider with provider=deepseek and key sk-…"*。完整文档：[mcp/README.md](mcp/README.md)。
 
 ## 工作原理
 
 ```
                 ┌─────────────────────────────┐
                 │       catalog.json          │  唯一数据源
-                │  checks · fixes · verify    │  （问题定义）
+                │  agents · checks · fixes    │  （注册表 + 问题定义）
                 └──────────────┬──────────────┘
                                │
-        ┌──────────────────────┼───────────────────────┐
-        ▼                      ▼                       ▼
-  fixes/*.md            scripts/fix.py           SKILL.md / AGENTS.md
-  人类/Agent 可读         CLI + Python API         各 Agent 的加载器
-  知识库                 （仅标准库）             （Hermes/Claude/OpenCode/Codex）
+        ┌──────────────────────┼───────────────────────┬──────────────────┐
+        ▼                      ▼                       ▼                  ▼
+  fixes/*.md            agentfix/ + scripts/fix.py   SKILL.md / AGENTS.md   mcp/server.py
+  人类/Agent 可读         CLI + Python API             各 Agent 的加载器        MCP server — 14 工具
+  知识库                 （仅标准库）                 （Hermes/Claude/…）      注册表 → 审核门 → 引擎
 ```
 
 `catalog.json` 里的每个问题都是数据 —— `checks`（诊断）、`fixes`（修复命令，可按
