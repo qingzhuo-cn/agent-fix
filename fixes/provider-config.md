@@ -25,7 +25,7 @@ three values for the provider you want, in the place that agent reads.
 
 ```bash
 fix check provider-config        # per detected agent: key env + config home
-# MCP: fix_check(provider-config) or the provider_setup tool
+# MCP: the `provider` tool generates the snippets for every installed agent
 ```
 
 ## The provider table
@@ -72,7 +72,7 @@ export ANTHROPIC_BASE_URL="https://<provider-anthropic-base-url>"
 export ANTHROPIC_AUTH_TOKEN="sk-..."
 ```
 
-MCP users: the `provider_setup` tool generates these snippets for every installed
+MCP users: the `provider` tool generates these snippets for every installed
 agent for any provider (and can write Claude's settings with `apply=true`).
 DeepSeek-specific details: [deepseek-provider.md](deepseek-provider.md).
 
@@ -88,7 +88,7 @@ claude "ping" --print 2>&1 | head -5       # replace with your agent's non-inter
 ## Prevention
 
 - Keep one canonical key per provider in your shell profile / agent config; never
-  paste keys into chat or commit them (run `config_audit` before pushing).
+  paste keys into chat or commit them (run the `audit` MCP tool / `config_audit` before pushing).
 - After any provider switch, verify with one real prompt — `--version` cannot see
   auth problems.
 - If prompts fail with 401, check [agent-auth.md](agent-auth.md); if they fail with

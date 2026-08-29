@@ -27,10 +27,10 @@ CLI (part of `fix doctor`, or standalone):
 
 ```bash
 fix check net-connectivity        # 9 endpoints, TCP:443, 5s timeout each
-python scripts/netcheck.py        # same engine, full report + proxy env
+python scripts/fix.py net          # same engine, full report + proxy env
 ```
 
-MCP: `net_diagnose` (same engine).
+MCP: `net` (same engine).
 
 Output looks like:
 
@@ -84,7 +84,7 @@ change your network):
 
 ```bash
 fix check net-connectivity        # all OK → network layer healthy
-python scripts/netcheck.py        # exit 0 = all endpoints reachable
+python scripts/fix.py net          # exit 0 = all endpoints reachable
 ```
 
 ## Prevention

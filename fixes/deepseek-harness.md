@@ -42,7 +42,7 @@ Or run the agent-fix engine:
 
 ```bash
 fix check deepseek-harness-broken        # diagnose
-fix apply deepseek-harness-broken --yes  # repair + verify
+fix apply deepseek-harness-broken        # prints the manual reinstall + verifies
 ```
 
 ## Fix

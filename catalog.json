@@ -1,16 +1,16 @@
 {
   "name": "agent-fix",
-  "version": "1.7.0",
+  "version": "2.0.0",
   "description": "Universal diagnostic/fix catalog for ALL AI coding agents (Claude Code, Codex, OpenCode, Hermes, Kimi Code, Pi, ZCode, Cursor, ...) — plus MCP server, branch skills, any-provider config, and network diagnostics",
   "agents": {
-    "claude-code":  { "name": "Claude Code",          "bin": ["claude"],            "config": "~/.claude",             "skills": "~/.claude/skills",        "npm_pkg": "@anthropic-ai/claude-code", "provider_env": ["ANTHROPIC_BASE_URL", "ANTHROPIC_AUTH_TOKEN"], "home": "https://docs.anthropic.com/claude-code" },
-    "codex":        { "name": "Codex CLI",             "bin": ["codex"],             "config": "~/.codex",              "skills": "~/.codex/skills",          "npm_pkg": "@openai/codex",            "provider_env": ["OPENAI_BASE_URL", "OPENAI_API_KEY"], "home": "https://github.com/openai/codex" },
-    "opencode":     { "name": "OpenCode",              "bin": ["opencode"],          "config": "~/.config/opencode",    "skills": "~/.config/opencode/skills",  "npm_pkg": "opencode-ai",              "provider_env": ["OPENAI_BASE_URL", "OPENAI_API_KEY"], "home": "https://opencode.ai" },
-    "hermes":       { "name": "Hermes Agent",          "bin": ["hermes"],            "config": "~/.local/share/hermes", "config_win": "$LOCALAPPDATA/hermes", "skills": "~/.local/share/hermes/skills", "npm_pkg": null,                       "provider_env": [], "home": "https://hermes-agent.nousresearch.com" },
+    "claude-code":  { "name": "Claude Code",          "bin": ["claude"],            "config": "~/.claude",             "skills": "~/.claude/skills",        "npm_pkg": "@anthropic-ai/claude-code", "provider_env": ["ANTHROPIC_BASE_URL", "ANTHROPIC_AUTH_TOKEN"], "hook": "claude",   "mcp": "claude",   "home": "https://docs.anthropic.com/claude-code" },
+    "codex":        { "name": "Codex CLI",             "bin": ["codex"],             "config": "~/.codex",              "skills": "~/.codex/skills",          "npm_pkg": "@openai/codex",            "provider_env": ["OPENAI_BASE_URL", "OPENAI_API_KEY"], "hook": "codex",    "mcp": "codex",    "home": "https://github.com/openai/codex" },
+    "opencode":     { "name": "OpenCode",              "bin": ["opencode"],          "config": "~/.config/opencode",    "skills": "~/.config/opencode/skills",  "npm_pkg": "opencode-ai",              "provider_env": ["OPENAI_BASE_URL", "OPENAI_API_KEY"], "hook": "opencode", "mcp": "opencode", "home": "https://opencode.ai" },
+    "hermes":       { "name": "Hermes Agent",          "bin": ["hermes"],            "config": { "posix": "~/.local/share/hermes", "win": "$LOCALAPPDATA/hermes" }, "skills": { "posix": "~/.local/share/hermes/skills", "win": "$LOCALAPPDATA/hermes/skills" }, "npm_pkg": null, "provider_env": [], "hook": "hermes", "home": "https://hermes-agent.nousresearch.com" },
     "kimi-code":    { "name": "Kimi Code",             "bin": ["kimi"],              "config": "~/.kimi-code",          "skills": "~/.kimi-code/skills",      "npm_pkg": null,                       "provider_env": ["KIMI_API_KEY"], "home": "https://kimi.com/code" },
     "pi":           { "name": "Pi (pi-coding-agent)",  "bin": ["pi"],                "config": "~/.pi",                 "skills": "~/.pi/agent/skills",       "npm_pkg": "@earendil-works/pi-coding-agent", "provider_env": ["OPENAI_API_KEY", "ANTHROPIC_API_KEY"], "home": "https://pi.dev" },
     "zcode":        { "name": "ZCode",                 "bin": ["zcode"],             "config": "~/.zcode",              "skills": "~/.agents/skills",         "npm_pkg": null,                       "provider_env": [], "no_version": true, "home": "https://zcode.ai" },
-    "cursor":       { "name": "Cursor",                "bin": ["cursor"],            "config": "~/.cursor",             "skills": "~/.cursor/skills",         "npm_pkg": null,                       "provider_env": [], "no_version": true, "home": "https://cursor.com" },
+    "cursor":       { "name": "Cursor",                "bin": ["cursor"],            "config": "~/.cursor",             "skills": "~/.cursor/skills",         "npm_pkg": null,                       "provider_env": [], "no_version": true, "mcp": "cursor", "home": "https://cursor.com" },
     "gemini":       { "name": "Gemini CLI",            "bin": ["gemini"],            "config": "~/.gemini",             "skills": null,                      "npm_pkg": "@google/gemini-cli",       "provider_env": ["GEMINI_API_KEY"], "home": "https://github.com/google-gemini/gemini-cli" },
     "aider":        { "name": "Aider",                 "bin": ["aider"],             "config": "~/.config/aider",       "skills": null,                      "npm_pkg": null,                       "provider_env": ["OPENAI_API_KEY"], "home": "https://aider.chat" },
     "qwen-code":    { "name": "Qwen Code",             "bin": ["qwen-code"],         "config": "~/.qwen-code",          "skills": null,                      "npm_pkg": "@qwen-code/qwen-code",     "provider_env": ["DASHSCOPE_API_KEY"], "home": "https://qwen.ai" },
@@ -360,9 +360,9 @@
       ],
       "fixes": [
         {
-          "name": "Reinstall @deepseek-ai/dsh globally (rebuilds bundles + deps)",
-          "cmd": "npm install -g @deepseek-ai/dsh",
-          "timeout": 900
+          "name": "Reinstall @deepseek-ai/dsh globally (manual, see doc)",
+          "manual": true,
+          "cmd": "echo 'Manual step: npm install -g @deepseek-ai/dsh (rebuilds bundles + deps). See fixes/deepseek-harness.md'"
         },
         {
           "name": "Node too old — install Node LTS (manual, see doc)",

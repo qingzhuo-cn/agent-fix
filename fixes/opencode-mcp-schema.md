@@ -68,9 +68,9 @@ Notes:
   `type`, `command` (string → array), and add `enabled`.
 - `agent-fix` ships a registrar that writes the correct shape since v1.5.x:
   ```bash
-  python scripts/mcp_register.py opencode      # fixes the entry in place (idempotent)
+  python scripts/fix.py mcp register opencode   # fixes the entry in place (idempotent)
   ```
-  If the entry was written by an older mcp_register.py (`type: stdio`), re-run it
+  If the entry was written by an older agent-fix (`type: stdio`), re-run it
   once after upgrading the repo, or fix by hand above.
 
 ## Verify
