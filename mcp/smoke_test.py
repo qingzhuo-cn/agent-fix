@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""agent-fix MCP regression harness (三省六部 smoke test).
+"""agent-fix MCP regression harness.
 
 Spawns mcp/server.py over stdio, runs the MCP handshake, and exercises EVERY
 registered tool through the wire protocol — asserting each returns a well-formed
@@ -7,7 +7,7 @@ result. Zero dependencies, no MCP client needed.
 
 Usage:
     python mcp/smoke_test.py            # full pass (incl. slow network tools)
-    python mcp/smoke_test.py --quick    # skip slow network tools (version/net/self-heal)
+    python mcp/smoke_test.py --quick    # skip slow tools (doctor/net/versions/self_heal)
 
 Exit code 0 = all passed, 1 = any failure. CI-friendly.
 """
@@ -23,28 +23,23 @@ ROOT = Path(__file__).resolve().parent.parent
 SERVER = Path(__file__).resolve().parent / "server.py"
 
 # tool -> (args, expect_isError)
-# Safe invocations only: destructive tools are called in list/dry-run/error mode.
+# Safe invocations only: mutating tools are called in dry-run/list/error mode.
 FAST_CALLS: dict = {
-    "court_status": ({}, False),
-    "fix_agents": ({}, False),
-    "fix_doctor": ({}, False),
-    "fix_check": ({"issue_id": "npm-registry-mirror"}, False),
-    "fix_info": ({"issue_id": "provider-config"}, False),
-    "fix_apply": ({"issue_id": "no-such-issue"}, False),  # unknown id -> no mutation
-    "log_triage": ({"lines": 5}, False),
-    "config_audit": ({"depth": 1}, False),
-    "backup_configs": ({}, False),
-    "restore_configs": ({}, False),  # list mode, no confirm
-    "provider_setup": ({"provider": "ollama"}, False),  # local provider, no key needed
-    "deepseek_setup": ({"key": ""}, False),  # missing key -> error TEXT (not isError)
-    "watchdog_status": ({}, False),
-    "heal_hooks": ({"action": "status"}, False),
-    "dsh_diagnose": ({}, False),
-    "dsh_fix": ({"apply": False}, False),  # dry-run, no mutation
+    "agents": ({}, False),
+    "check": ({"issue_id": "node-version-too-old"}, False),
+    "apply": ({"issue_id": "no-such-issue"}, False),  # unknown id -> text, no mutation
+    "info": ({"issue_id": "provider-config"}, False),
+    "logs": ({"lines": 5}, False),
+    "audit": ({"depth": 1}, False),
+    "backup": ({}, False),
+    "restore": ({}, False),  # list mode, no confirm
+    "provider": ({"provider": "ollama"}, False),  # local provider, no key needed
+    "hooks": ({"action": "status"}, False),
 }
 SLOW_CALLS: dict = {
-    "net_diagnose": ({"timeout": 3}, False),
-    "version_check": ({}, False),
+    "doctor": ({}, False),
+    "net": ({"timeout": 3}, False),
+    "versions": ({}, False),
     "self_heal": ({"apply": False}, False),  # diagnose-only, no mutation
 }
 
@@ -96,14 +91,17 @@ def exercise(calls: dict, timeout: int = 120) -> int:
 def main() -> int:
     quick = "--quick" in sys.argv
 
-    # 1) handshake + tool list
+    # 1) handshake + tool list; a notification must NOT be answered
     resp = run_mcp(
         [
             {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2024-11-05"}},
+            {"jsonrpc": "2.0", "method": "notifications/initialized"},
+            {"jsonrpc": "2.0", "method": "notifications/cancelled", "params": {"requestId": 1}},
             {"jsonrpc": "2.0", "id": 2, "method": "tools/list"},
         ]
     )
     assert resp[0]["result"]["serverInfo"]["name"] == "agent-fix", resp[0]
+    assert len(resp) == 2, f"notification got a response (must stay silent): {resp}"
     tools = {t["name"] for t in resp[1]["result"]["tools"]}
     expected = set(FAST_CALLS) | set(SLOW_CALLS)
     missing = expected - tools
@@ -117,16 +115,17 @@ def main() -> int:
 
     # 3) slow / network tools (skipped with --quick)
     if not quick:
-        print("-- slow/network tools --")
+        print("-- slow tools --")
         failed += exercise(SLOW_CALLS, timeout=420)
     else:
-        print("-- skipped slow/network tools (--quick) --")
+        print("-- skipped slow tools (--quick) --")
 
-    # 4) the gate must veto garbage + unknown tools
+    # 4) the gate must veto garbage + unknown tools + bad arg types
     bad = run_mcp(
         [
             {"jsonrpc": "2.0", "id": 90, "method": "tools/call", "params": {"name": "no_such_tool", "arguments": {}}},
-            {"jsonrpc": "2.0", "id": 91, "method": "tools/call", "params": {"name": "config_audit", "arguments": {"depth": "abc"}}},
+            {"jsonrpc": "2.0", "id": 91, "method": "tools/call", "params": {"name": "audit", "arguments": {"depth": "abc"}}},
+            {"jsonrpc": "2.0", "id": 92, "method": "tools/call", "params": {"name": "self_heal", "arguments": {"apply": "maybe"}}},
         ]
     )
     for r in bad:
@@ -136,7 +135,7 @@ def main() -> int:
     if failed:
         print(f"\n{failed} tool(s) FAILED")
         return 1
-    print("\nALL TOOLS PASS (三省六部 court is healthy)")
+    print("\nALL TOOLS PASS")
     return 0
 
 
