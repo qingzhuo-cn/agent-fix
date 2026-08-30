@@ -4,12 +4,12 @@
 <img width="1000px" alt="agent-fix" src="docs/assets/banner.svg">
 </p>
 
-# agent-fix ![Awesome](https://cdn.rawgit.com/sindresorhus/awesome/d7305f38d29fed78fa85652e3a63e154dd8e8829/media/badge.svg)
+# agent-fix
 
-**Universal repair skill &amp; CLI for ALL AI coding agents** — fix Claude Code,
-Codex, OpenCode, Hermes, Kimi Code, Pi, ZCode, Cursor, Gemini CLI, Aider, Qwen
-Code and any npm-distributed CLI with one skill, in the terminal, from a program,
-or from inside another agent.
+**One command heals broken AI coding agents.** Claude Code, Codex, OpenCode,
+Hermes, Kimi Code, Pi, ZCode, Cursor — when the install or upgrade silently breaks
+them, `fix apply <id>` diagnoses, repairs, and **verifies** in a single command.
+No dependencies. Cross-platform.
 
 English / [简体中文](README_cn.md)
 
@@ -17,8 +17,37 @@ English / [简体中文](README_cn.md)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)]()
 [![Python](https://img.shields.io/badge/python-3.8%2B-blue.svg)]()
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)]()
+[![GitHub stars](https://img.shields.io/github/stars/qingzhuo-cn/agent-fix?style=social)](https://github.com/qingzhuo-cn/agent-fix)
 
 </div>
+
+> #### 🩺 It really looks like this
+>
+> ```console
+> $ fix doctor
+> == npm-postinstall-skipped: npm postinstall skipped -> native binary missing
+>     [FAIL] opencode binary runs
+>           Error: postinstall script was not run
+>    -> BROKEN. Fix with: fix apply npm-postinstall-skipped --yes
+>
+> $ fix apply npm-postinstall-skipped --yes
+>     [FIX ] Re-run opencode postinstall        → ok (12.4s)
+>     [FIX ] Re-run claude-code install script  → ok (1.1s)
+>     [VERIFY OK] opencode --version            → v1.18.10
+>     [VERIFY OK] claude --version              → 2.1.220 (Claude Code)
+> => verified OK
+> ```
+>
+> ```console
+> $ fix doctor   # everything healthy? prints nothing
+> $ echo $?      # → 0
+> ```
+
+**▶ Try it in 30 seconds — no install, no dependencies:**
+```bash
+git clone https://github.com/qingzhuo-cn/agent-fix.git && cd agent-fix
+./scripts/fix doctor   # or: powershell -File install\install.ps1 to install into your agents
+```
 
 ## Table of Contents
 
