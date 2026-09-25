@@ -1867,7 +1867,15 @@ class SecureStateTests(unittest.TestCase):
                         state.restore_zip_members_bytes(
                             data, {"payload.txt": root / relative}, [root]
                         )
-                    self.assertIn("component", str(context.exception))
+                    # Either guard may fire first — the reserved-component check
+                    # or the Windows device-namespace check — and both are
+                    # correct refusals of the same destination. The contract
+                    # under test is the refusal, not which layer produced it.
+                    message = str(context.exception)
+                    self.assertTrue(
+                        "component" in message or "device namespace" in message,
+                        f"unexpected refusal reason: {message}",
+                    )
             # A legitimate destination is still accepted.
             state.restore_zip_members_bytes(data, {"payload.txt": root / "ok.txt"}, [root])
             self.assertTrue((root / "ok.txt").exists())
