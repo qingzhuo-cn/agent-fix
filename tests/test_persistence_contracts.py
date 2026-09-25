@@ -1924,6 +1924,26 @@ class SecureStateTests(unittest.TestCase):
             # Ordinary names still work.
             state.atomic_write_text(root / "ok.txt", "fine", private=True)
             self.assertEqual((root / "ok.txt").read_text(encoding="utf-8"), "fine")
+            # A near-miss is still an ordinary file.
+            state.atomic_write_text(root / "console.log", "fine", private=True)
+            self.assertEqual((root / "console.log").read_text(encoding="utf-8"), "fine")
+
+    def test_persistence_refuses_windows_device_namespace_paths(self) -> None:
+        """os.path.abspath maps a bare reserved name into the \\.\\ device
+        namespace, and Path.resolve() raises WinError 87 for it on Python 3.8.
+        Nothing legitimate persists there, so it is a typed refusal."""
+        if os.name != "nt":
+            self.skipTest("the device namespace only exists on Windows")
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            for name in ("CON", "COM1", "AUX", "NUL", "LPT1"):
+                with self.subTest(name=name):
+                    # Bare form: abspath lands in \\.\ before any component check.
+                    with self.assertRaises(state.StateError):
+                        state.atomic_write_text(Path(name), "x", private=True)
+                    # Explicit device namespace.
+                    with self.assertRaises(state.StateError):
+                        state.atomic_write_text(Path("\\\\.\\" + name), "x", private=True)
 
     def test_restore_rejects_snapshot_replaced_after_verification(self) -> None:
         """Replacing the snapshot after it was verified must be refused, not

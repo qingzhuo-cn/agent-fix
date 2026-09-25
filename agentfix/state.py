@@ -282,6 +282,15 @@ def _normalized_persistent_path(value: Path) -> Path:
     # are ordinary files on POSIX, and archive members are already refused
     # unconditionally by _safe_zip_name because they travel between systems.
     if os.name == "nt":
+        # os.path.abspath maps a bare reserved name straight into the device
+        # namespace ("CON" -> "\\\\.\\CON"), and Path.resolve() raises
+        # OSError [WinError 87] for it on Python 3.8. Refuse that namespace
+        # outright: nothing legitimate persists inside \\.\ or \\?\.
+        rendered = str(normalized)
+        if rendered.startswith("\\\\.\\") or rendered.startswith("\\\\?\\"):
+            raise StateError(
+                f"persistent path resolves into the Windows device namespace: {normalized}"
+            )
         drive = normalized.anchor
         for component in normalized.parts:
             if component == drive or component in (os.sep, os.altsep):
@@ -348,7 +357,13 @@ def atomic_write_bytes(path: Path, data: bytes, private: bool = True) -> None:
     """
     path = _normalized_persistent_path(path)
     _reject_symlink_chain(path)
-    path.parent.mkdir(parents=True, mode=0o700, exist_ok=True)
+    # Directory preparation is the last step before any filesystem effect, so a
+    # failure here must stay a typed StateError rather than a raw OSError from
+    # mkdir (Windows raises WinError 3 for a device-namespace parent).
+    try:
+        path.parent.mkdir(parents=True, mode=0o700, exist_ok=True)
+    except OSError as exc:
+        raise StateError(f"cannot create state parent directory {path.parent}: {exc}") from exc
     _reject_symlink_chain(path.parent)
     if path.exists() and not path.is_file():
         raise StateError(f"state target is not a regular file: {path}")
