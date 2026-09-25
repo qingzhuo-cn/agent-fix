@@ -78,11 +78,23 @@ jobs:
           import sys
           assert subprocess.run([sys.executable, "scripts/fix.py", "list"], check=True).returncode == 0
           assert subprocess.run([sys.executable, "scripts/fix.py", "agents"], check=True).returncode == 0
-          help_text = subprocess.check_output([sys.executable, "scripts/fix.py", "--help"], text=True)
-          assert "--agent" in help_text
+          # --agent is a per-subcommand flag, so it is asserted on the
+          # subcommand surface rather than the top-level usage line.
+          check_help = subprocess.check_output([sys.executable, "scripts/fix.py", "check", "--help"], text=True)
+          assert "--agent" in check_help, check_help
+          # Explicit targeting stays mandatory: omitting it is a usage error.
           failed = subprocess.run([sys.executable, "scripts/fix.py", "check", "node-version-too-old"], text=True, capture_output=True)
           assert failed.returncode != 0
           assert "--agent" in (failed.stdout + failed.stderr)
+          # A real user status must produce a defined exit code (0 healthy,
+          # 1 FAIL/INCONCLUSIVE, 2 target error) rather than crashing. Which one
+          # depends on which agents exist on the runner, so assert the set.
+          checked = subprocess.run(
+              [sys.executable, "scripts/fix.py", "check", "node-version-too-old", "--agent", "claude-code"],
+              text=True,
+              capture_output=True,
+          )
+          assert checked.returncode in (0, 1, 2), (checked.returncode, checked.stdout, checked.stderr)
       - name: MCP registry and notification discipline
         shell: python
         run: |
