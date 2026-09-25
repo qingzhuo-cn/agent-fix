@@ -22,6 +22,90 @@ The engine resolves only `opencode`, runs only the checks and fixes that apply t
 it, and verifies only `opencode`. It does not probe, repair, or validate any other
 installed agent or model.
 
+## Engineering highlights
+
+What is unusual about this tool is not the set of failures it repairs but that it
+**does not trust anything it receives**: not ZIP archives, not the filesystem
+between the check and the commit, not the status text an adapter returns, not even
+the output of the commands it runs itself. A few places that show the approach.
+
+### Atomic writes: treating "checked" to "committed" as an attack window
+
+`os.replace` in the standard library **cannot** be kernel-atomic against a
+same-user concurrent writer. `agentfix/state.py` does not pretend otherwise; it
+defends the whole window:
+
+- The target's content and identity are captured before the write and
+  **re-verified after the commit**; a mismatch rolls back to the pre-write bytes.
+- Directory identity is a `(st_dev, st_ino, entry-name signature)` triple.
+  `dev`/`ino` alone is not enough — inode reuse lets a brand-new file present the
+  same numbers as the file it replaced.
+- Parent-directory identity is captured when the operation starts and re-checked
+  both before and after the commit. If the parent was swapped, the rollback is
+  **not** written into the new directory and the only good backup is **not** moved.
+- Directory-swap recovery markers record the stage, backup, and old-target
+  identities. A tampered backup is refused rather than installed.
+- A restore whose snapshot or parent directory was replaced is refused outright
+  instead of guessed at.
+
+### ZIP: preflight before allocation
+
+The EOCD is preflighted, then the central directory is walked in a stream with a
+fixed 46-byte buffer; `ZipFile` is constructed only **after** the archive is
+confirmed self-consistent. A forged entry count could previously skip the central
+directory walk and make the trailing payload get read into memory. Such input is
+now refused before allocation happens: peak usage stays at ~0.19 MB whether the
+forged payload is 1 MB, 10 MB, or 50 MB.
+
+### Reporting the indeterminate as indeterminate
+
+Four-state results (`PASS` / `FAIL` / `INCONCLUSIVE` / `SKIPPED`), with a
+conservative rollup that requires every check to be `PASS`; the CLI returns a
+nonzero exit code for real user status (0 healthy, 1 fail or inconclusive, 2
+target error).
+
+This replaced a textbook false success: `uninstall` only collected `error`, so a
+hook cleanup that returned `inconclusive` still reported `ok` and exited 0 — a
+removal that could not confirm completion was counted as done. That is now an
+`error`.
+
+Status is no longer inferred from human-readable text. `StatusText`/`StatusLines`
+carry an explicit `.status` side channel, so the exit code follows the real state
+rather than the wording.
+
+### The masking boundary reaches the subprocess
+
+API keys, access tokens, secrets, query strings, and Bearer headers are all
+redacted. But `token=...`, `{"token": ...}`, and `token: ...` — the forms real
+config files actually use — **leaked verbatim**; they are covered now. Subprocess
+stdout/stderr crosses the masking layer on both the success and failure paths; the
+original implementation masked only the failing one.
+
+### Convergence, not a second owner
+
+Persistence, archiving, and atomic writes have exactly one owner: `state.py`.
+`hooks.py` had held three near-identical copies of the MCP registration path;
+they are now one table-driven path, with the per-agent differences held as data in
+`_MCP_JSON_SPECS`. Splitting `hooks.py` was assessed and **rejected**: a new agent
+is registry data in `catalog.json` and needs no code change, and all four of its
+responsibilities share one `_write`/`_load_json` substrate and target the same user
+config files — splitting would add a shared utility layer, which is precisely the
+"second owner" the rules forbid.
+
+### Evidence
+
+232 tests across three local interpreters (Windows 3.14, Windows 3.8, Ubuntu), plus
+a green six-cell GitHub Actions matrix (ubuntu-22.04, windows-2022, macos-15-intel ×
+Python 3.8 / 3.11).
+
+Rewriting the MCP registration path used a 30-case differential harness (3 agents ×
+register/remove × 5 filesystem states) comparing the exact status text and on-disk
+JSON before and after. Normalizing the random temp directory name, the two runs are
+byte-identical — behavioral equivalence was proven, not assumed.
+
+5276 lines of engine and 4445 lines of tests, with **zero third-party
+dependencies**.
+
 ## Why agent-fix
 
 Agent failures often share root causes:
