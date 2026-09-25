@@ -433,49 +433,73 @@ def _mcp_opencode(register: bool) -> str:
     return _json_bucket_unmerge(path, "mcp", "opencode", _mcp_opencode_entry())
 
 
-def _mcp_cursor(register: bool) -> str:
-    path = Path.home() / ".cursor" / "mcp.json"
-    if not path.parent.exists():
-        return StatusText("SKIP cursor: not installed", "inconclusive")
-    if register:
-        entry = {"command": sys.executable, "args": [MCP_SERVER.as_posix()]}
-        return _json_bucket_merge(path, "mcpServers", entry, "cursor")
-    entry = {"command": sys.executable, "args": [MCP_SERVER.as_posix()]}
-    return _json_bucket_unmerge(path, "mcpServers", "cursor", entry)
+def _mcp_entry(typed: bool) -> Dict[str, Any]:
+    """The MCP entry agent-fix owns for these agents.
+
+    Cursor's schema takes ``{command,args}``; Kimi Code and MiniMax Code take
+    the stdio shape with ``enabled``. The divergence is deliberate per agent,
+    and the contract tests assert each shape so a silent change cannot pass.
+    """
+    if typed:
+        return {
+            "type": "stdio",
+            "command": sys.executable,
+            "args": [MCP_SERVER.as_posix()],
+            "enabled": True,
+        }
+    return {"command": sys.executable, "args": [MCP_SERVER.as_posix()]}
 
 
-def _mcp_kimi(register: bool) -> str:
-    info = cat.load_catalog().get("agents", {}).get("kimi-code", {})
-    base = Path(cat.config_path(info) or (Path.home() / ".kimi-code").as_posix())
-    path = base / "mcp.json"
-    if not path.parent.exists():
-        return StatusText("SKIP kimi-code: not installed", "inconclusive")
-    entry = {"type": "stdio", "command": sys.executable, "args": [MCP_SERVER.as_posix()], "enabled": True}
-    if register:
-        return _json_bucket_merge(path, "mcpServers", entry, "kimi-code")
-    return _json_bucket_unmerge(path, "mcpServers", "kimi-code", entry)
+def _mcp_json_agent(agent: str, register: bool) -> str:
+    """Shared single-file mcp.json integration.
 
-
-def _mcp_minimax(register: bool) -> str:
-    info = cat.load_catalog().get("agents", {}).get("minimax-code", {})
-    base = Path(cat.config_path(info) or (Path.home() / ".minimax").as_posix())
+    These agents all keep one ``mcp.json`` in a config home and one entry under
+    ``mcpServers``; only the config home, the entry shape, and whether removal
+    must also sweep a historical path differ. Those differences live in
+    ``_MCP_JSON_SPECS`` instead of being copied into one function per agent.
+    """
+    spec = _MCP_JSON_SPECS[agent]
+    home = Path.home() / spec["fallback"]
+    base = home
+    if spec["catalog"]:
+        info = cat.load_catalog().get("agents", {}).get(spec["catalog"], {})
+        base = Path(cat.config_path(info) or home.as_posix())
     primary = base / "mcp.json"
-    legacy = base / "mcp" / "mcp.json"
-    entry = {"type": "stdio", "command": sys.executable, "args": [MCP_SERVER.as_posix()], "enabled": True}
+    entry = _mcp_entry(bool(spec["typed"]))
     if register:
         if not primary.parent.exists():
-            return StatusText("SKIP minimax-code: not installed", "inconclusive")
-        return _json_bucket_merge(primary, "mcpServers", entry, "minimax-code")
-    results = []
-    for path in (primary, legacy):
-        if path.exists():
-            results.append(_json_bucket_unmerge(path, "mcpServers", "minimax-code", entry))
+            return StatusText(f"SKIP {agent}: not installed", "inconclusive")
+        return _json_bucket_merge(primary, "mcpServers", entry, agent)
+    legacy = base / spec["legacy"] if spec["legacy"] else None
+    if legacy is None:
+        if not primary.parent.exists():
+            return StatusText(f"SKIP {agent}: not installed", "inconclusive")
+        return _json_bucket_unmerge(primary, "mcpServers", agent, entry)
+    # Removal must also clear a historical layout, so sweep both locations and
+    # report the worst outcome rather than only the first one touched.
+    results = [
+        _json_bucket_unmerge(path, "mcpServers", agent, entry)
+        for path in (primary, legacy)
+        if path.exists()
+    ]
     if not results:
-        return StatusText("SKIP minimax-code: no MCP config found", "inconclusive")
+        return StatusText(f"SKIP {agent}: no MCP config found", "inconclusive")
     status = "error" if any(status_of(value, "ok") == "error" for value in results) else (
         "inconclusive" if any(status_of(value, "ok") == "inconclusive" for value in results) else "ok"
     )
     return StatusText("; ".join(str(value) for value in results), status)
+
+
+def _mcp_cursor(register: bool) -> str:
+    return _mcp_json_agent("cursor", register)
+
+
+def _mcp_kimi(register: bool) -> str:
+    return _mcp_json_agent("kimi-code", register)
+
+
+def _mcp_minimax(register: bool) -> str:
+    return _mcp_json_agent("minimax-code", register)
 
 
 def _codex_mcp_block() -> str:
@@ -554,6 +578,25 @@ def _mcp_codex(register: bool) -> str:
         text += "\n"
     _write(path, text + _codex_mcp_block())
     return StatusText(f"codex: registered in {path}", "ok")
+
+
+# MCP targets that share one shape: a single mcp.json in a config home, holding
+# one agent-fix entry under "mcpServers". The per-agent differences are data so
+# the merge/unmerge body is written once.
+#   catalog  — registry id consulted for the config home (None = fixed path)
+#   fallback — config home used when the registry has no path for that agent
+#   typed    — whether that agent's schema wants the stdio entry with `enabled`
+#   legacy   — extra historical mcp.json that removal must also clear
+_MCP_JSON_SPECS: Dict[str, Dict[str, Any]] = {
+    "cursor": {"catalog": None, "fallback": ".cursor", "typed": False, "legacy": None},
+    "kimi-code": {"catalog": "kimi-code", "fallback": ".kimi-code", "typed": True, "legacy": None},
+    "minimax-code": {
+        "catalog": "minimax-code",
+        "fallback": ".minimax",
+        "typed": True,
+        "legacy": "mcp/mcp.json",
+    },
+}
 
 
 MCP_FLAVORS: Dict[str, Any] = {

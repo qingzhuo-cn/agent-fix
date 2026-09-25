@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -168,6 +169,68 @@ class IntegrationSafetyTests(unittest.TestCase):
             text = config.read_text(encoding="utf-8")
             self.assertNotIn("selfheal", text)
             self.assertIn("[other]\nkeep = true", text)
+
+    def test_json_mcp_entry_shape_is_pinned_per_agent(self) -> None:
+        """The three shared-shape agents deliberately differ: Cursor's schema
+        takes {command,args}, while Kimi Code and MiniMax Code take the stdio
+        shape with `enabled`. Nothing asserted the entry body before, so a
+        silent shape change would have passed unnoticed."""
+        self.assertFalse(hooks._MCP_JSON_SPECS["cursor"]["typed"])
+        for agent in ("kimi-code", "minimax-code"):
+            with self.subTest(agent=agent):
+                self.assertTrue(hooks._MCP_JSON_SPECS[agent]["typed"])
+        with tempfile.TemporaryDirectory() as td:
+            home = Path(td)
+            for relative in (".cursor", ".kimi-code", ".minimax"):
+                (home / relative).mkdir()
+            with patch.object(hooks.Path, "home", return_value=home), patch.dict(
+                os.environ,
+                {"HOME": str(home), "USERPROFILE": str(home), "KIMI_CODE_HOME": "", "MINIMAX_DATA_DIR": "", "MAVIS_DATA_DIR": ""},
+                clear=False,
+            ):
+                for fn in (hooks._mcp_cursor, hooks._mcp_kimi, hooks._mcp_minimax):
+                    fn(True)
+
+            def entry_of(relative):
+                data = json.loads((home / relative / "mcp.json").read_text(encoding="utf-8"))
+                return data["mcpServers"]["agent-fix"]
+
+            cursor_entry = entry_of(".cursor")
+            self.assertEqual(
+                set(cursor_entry), {"command", "args"}, "Cursor must keep the untyped entry shape"
+            )
+            for relative in (".kimi-code", ".minimax"):
+                with self.subTest(agent=relative):
+                    typed = entry_of(relative)
+                    self.assertEqual(
+                        set(typed), {"type", "command", "args", "enabled"},
+                        "Kimi Code and MiniMax Code must keep the stdio entry shape",
+                    )
+                    self.assertEqual(typed["type"], "stdio")
+                    self.assertIs(typed["enabled"], True)
+
+    def test_minimax_removal_sweeps_legacy_layout(self) -> None:
+        """The legacy mcp/mcp.json is only reachable through the spec, so the
+        sweep is asserted rather than assumed."""
+        self.assertEqual(hooks._MCP_JSON_SPECS["minimax-code"]["legacy"], "mcp/mcp.json")
+        with tempfile.TemporaryDirectory() as td:
+            home = Path(td)
+            legacy_dir = home / ".minimax" / "mcp"
+            legacy_dir.mkdir(parents=True)
+            owned = hooks._mcp_entry(True)
+            payload = {"mcpServers": {"agent-fix": owned}}
+            (legacy_dir / "mcp.json").write_text(json.dumps(payload), encoding="utf-8")
+            with patch.object(hooks.Path, "home", return_value=home), patch.dict(
+                os.environ,
+                {"HOME": str(home), "USERPROFILE": str(home), "MINIMAX_DATA_DIR": "", "MAVIS_DATA_DIR": ""},
+                clear=False,
+            ):
+                result = hooks._mcp_minimax(False)
+            self.assertIn("removed", result)
+            self.assertNotIn(
+                "agent-fix",
+                json.loads((legacy_dir / "mcp.json").read_text(encoding="utf-8"))["mcpServers"],
+            )
 
     def test_remaining_json_mcp_flavors_register_and_remove(self) -> None:
         with tempfile.TemporaryDirectory() as td:
