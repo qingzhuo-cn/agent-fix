@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "artifactKey": "task-1-surface-contract-tests",
+  "type": "regression",
+  "source": "tests/test_surface_contracts.py",
+  "summary": "Latest attempt task-1-attempt-1: Initial focused test run exposed intended launcher/parser/catalog gaps plus a test-harness assertRaises scope error; corrected the test and reproduced only the intended gaps",
+  "verifier": "python -m unittest discover -s tests -p test_surface_contracts.py -v",
+  "sliceId": "task-1-surface-contract-tests",
+  "evidenceStatus": "attempted",
+  "attempts": [
+    {
+      "attemptId": "task-1-attempt-1",
+      "attemptStatus": "failed",
+      "summary": "Initial focused test run exposed intended launcher/parser/catalog gaps plus a test-harness assertRaises scope error; corrected the test and reproduced only the intended gaps",
+      "evidenceRefs": [
+        "first focused run and corrected second focused run"
+      ],
+      "updatedAt": "2026-09-25"
+    }
+  ],
+  "attemptSummary": {
+    "failed": 1,
+    "blocked": 0,
+    "attempted": 0,
+    "total": 1,
+    "lastAttemptId": "task-1-attempt-1"
+  },
+  "updatedAt": "2026-09-25"
+}

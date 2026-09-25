@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "baselineRefs": [
+    "docs/aegis/specs/2026-09-25-agent-fix-phase1-convergence-brief.md; docs/aegis/plans/2026-09-25-agent-fix-phase1-convergence.md; AGENTS.md"
+  ],
+  "impactStatement": "docs/aegis/work/2026-09-25-agent-fix-phase1-convergence/impact-statement-draft.json",
+  "compatPlan": "Preserve all issue ids, 12 MCP tools, launcher paths, hook cleanup, and persistent user state",
+  "retirementPlan": "verified: duplicate npm lifecycle owner, hidden no-op JSON registrations, stale bulk examples, wrong MCP names, and unsupported ZCode routing removed; Phase 2 candidates remain deferred",
+  "evidenceBundle": [
+    "docs/aegis/work/2026-09-25-agent-fix-phase1-convergence/evidence-bundle-draft-phase1-final-verification.json"
+  ]
+}

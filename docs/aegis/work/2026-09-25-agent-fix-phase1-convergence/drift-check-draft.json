@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "taskId": "2026-09-25-agent-fix-phase1-convergence",
+  "taskIntentRef": "docs/aegis/work/2026-09-25-agent-fix-phase1-convergence/task-intent-draft.json",
+  "baselineRefs": [
+    "docs/aegis/specs/2026-09-25-agent-fix-phase1-convergence-brief.md; docs/aegis/plans/2026-09-25-agent-fix-phase1-convergence.md; AGENTS.md"
+  ],
+  "scopeStatus": "verified: all five approved Phase 1 tasks implemented; 21 tests, isolated MCP smoke, launcher help, CLI boundaries, compile, and diff checks passed",
+  "compatStatus": "verified: all issue ids, 12 MCP tools, three launcher paths, hook cleanup, explicit-target safety, and persistent state preserved; only list/info no-op JSON is retired",
+  "retirementStatus": "verified: duplicate npm lifecycle owner, hidden no-op JSON registrations, stale bulk examples, wrong MCP names, and unsupported ZCode routing removed; Phase 2 candidates remain deferred",
+  "newRiskSignals": [
+    "none within authorized scope; real destructive install/uninstall/check/apply paths intentionally unexecuted"
+  ],
+  "decision": "pause-for-user"
+}

@@ -2,3 +2,8 @@ __pycache__/
 *.pyc
 .DS_Store
 *.log
+
+# Local agent session artifacts, not part of the published skill
+.agent-teams/
+.dsh/
+.zcode/

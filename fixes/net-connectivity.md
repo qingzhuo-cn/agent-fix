@@ -23,22 +23,26 @@ reports in one command.
 
 ## Check
 
-CLI (part of `fix doctor`, or standalone):
+Check the selected Agent's mapped endpoint:
 
 ```bash
-fix check net-connectivity        # 9 endpoints, TCP:443, 5s timeout each
-python scripts/fix.py net          # same engine, full report + proxy env
+fix check net-connectivity --agent <id>
 ```
 
-MCP: `net` (same engine).
+Or test one explicit host directly:
+
+```bash
+fix net api.deepseek.com
+python scripts/fix.py net api.deepseek.com --timeout 5
+```
+
+MCP: `net(host=...)` uses the same single-host engine.
 
 Output looks like:
 
-```
-  OK      deepseek                    api.deepseek.com          (131ms)
-  TIMEOUT openai (codex)              api.openai.com            (>5.0s)
-  DNS-FAIL alibaba (qwen)             dashscope.aliyuncs.com
-  ...
+```text
+  OK      api.deepseek.com          (131ms)
+  TIMEOUT api.openai.com            (>5.0s)
   HTTP_PROXY = http://127.0.0.1:7890
   HTTPS_PROXY = http://127.0.0.1:7890
 ```
@@ -56,13 +60,13 @@ Interpretation:
 ## Fix
 
 The network layer has no one-size-fits-all auto-repair, so this issue's fix is
-manual guidance (the CLI prints it; `fix apply net-connectivity --yes` won't
-change your network):
+manual guidance. `fix apply net-connectivity --agent <id> --yes` reports the
+steps but does not change the network:
 
 1. **Proxy set? Test it.**
    ```bash
    env | grep -iE "http_proxy|https_proxy|all_proxy"      # what's set
-   curl -x "$HTTPS_PROXY" -sI https://api.deepseek.com | head -1   # proxy alive?
+   curl -x "$HTTPS_PROXY" -sI https://api.deepseek.com  # proxy alive? preserve exit
    ```
    If a proxy is configured but dead, fix the proxy/VPN (or temporarily
    `unset HTTPS_PROXY HTTP_PROXY ALL_PROXY` and retry).
@@ -78,13 +82,14 @@ change your network):
    # Windows: C:\Windows\System32\drivers\etc\hosts  — remove stale entries
    # Flush DNS: ipconfig /flushdns  (Win) | sudo systemd-resolve --flush-caches (Linux)
    ```
-4. **Retry** after the network change: `fix check net-connectivity`.
+4. **Retry** after the network change with
+   `fix check net-connectivity --agent <id>`.
 
 ## Verify
 
 ```bash
-fix check net-connectivity        # all OK → network layer healthy
-python scripts/fix.py net          # exit 0 = all endpoints reachable
+fix check net-connectivity --agent <id>       # mapped endpoint is reachable
+fix net api.deepseek.com                      # explicit host is reachable
 ```
 
 ## Prevention

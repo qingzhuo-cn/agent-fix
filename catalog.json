@@ -1,13 +1,14 @@
 {
   "name": "agent-fix",
   "version": "2.0.0",
-  "description": "Universal diagnostic/fix catalog for ALL AI coding agents (Claude Code, Codex, OpenCode, Hermes, Kimi Code, Pi, ZCode, Cursor, ...) — plus MCP server, branch skills, any-provider config, and network diagnostics",
+  "description": "Universal diagnostic/fix catalog for ALL AI coding agents (Claude Code, Codex, OpenCode, Hermes, Kimi Code, MiniMax Code, Pi, ZCode, Cursor, ...) — plus MCP server, branch skills, any-provider config, and network diagnostics",
   "agents": {
-    "claude-code":  { "name": "Claude Code",          "bin": ["claude"],            "config": "~/.claude",             "skills": "~/.claude/skills",        "npm_pkg": "@anthropic-ai/claude-code", "provider_env": ["ANTHROPIC_BASE_URL", "ANTHROPIC_AUTH_TOKEN"], "hook": "claude",   "mcp": "claude",   "home": "https://docs.anthropic.com/claude-code" },
-    "codex":        { "name": "Codex CLI",             "bin": ["codex"],             "config": "~/.codex",              "skills": "~/.codex/skills",          "npm_pkg": "@openai/codex",            "provider_env": ["OPENAI_BASE_URL", "OPENAI_API_KEY"], "hook": "codex",    "mcp": "codex",    "home": "https://github.com/openai/codex" },
-    "opencode":     { "name": "OpenCode",              "bin": ["opencode"],          "config": "~/.config/opencode",    "skills": "~/.config/opencode/skills",  "npm_pkg": "opencode-ai",              "provider_env": ["OPENAI_BASE_URL", "OPENAI_API_KEY"], "hook": "opencode", "mcp": "opencode", "home": "https://opencode.ai" },
+    "claude-code":  { "name": "Claude Code",          "bin": ["claude"],            "config": "~/.claude",             "skills": "~/.claude/skills",        "npm_pkg": "@anthropic-ai/claude-code", "provider_env": ["ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN"], "hook": "claude",   "mcp": "claude",   "home": "https://docs.anthropic.com/claude-code" },
+    "codex":        { "name": "Codex CLI",             "bin": ["codex"],             "config": "~/.codex",              "skills": "~/.codex/skills",          "npm_pkg": "@openai/codex",            "provider_env": ["OPENAI_API_KEY"], "hook": "codex",    "mcp": "codex",    "home": "https://github.com/openai/codex" },
+    "opencode":     { "name": "OpenCode",              "bin": ["opencode"],          "config": "~/.config/opencode",    "skills": "~/.config/opencode/skills",  "npm_pkg": "opencode-ai",              "provider_env": ["OPENAI_API_KEY"], "hook": "opencode", "mcp": "opencode", "home": "https://opencode.ai" },
     "hermes":       { "name": "Hermes Agent",          "bin": ["hermes"],            "config": { "posix": "~/.local/share/hermes", "win": "$LOCALAPPDATA/hermes" }, "skills": { "posix": "~/.local/share/hermes/skills", "win": "$LOCALAPPDATA/hermes/skills" }, "npm_pkg": null, "provider_env": [], "hook": "hermes", "home": "https://hermes-agent.nousresearch.com" },
-    "kimi-code":    { "name": "Kimi Code",             "bin": ["kimi"],              "config": "~/.kimi-code",          "skills": "~/.kimi-code/skills",      "npm_pkg": null,                       "provider_env": ["KIMI_API_KEY"], "home": "https://kimi.com/code" },
+    "kimi-code":    { "name": "Kimi Code",             "bin": ["kimi"],              "config": "~/.kimi-code",          "config_env": "KIMI_CODE_HOME", "skills": "~/.kimi-code/skills", "skills_env": "KIMI_CODE_HOME", "npm_pkg": "@moonshot-ai/kimi-code",   "provider_env": [], "mcp": "kimi-code", "node_requirement": ">=22.19.0", "home": "https://kimi.com/code" },
+    "minimax-code": { "name": "MiniMax Code",          "bin": ["mcode"],             "config": "~/.minimax",             "config_env": ["MINIMAX_DATA_DIR", "MAVIS_DATA_DIR"], "skills": "~/.minimax/skills", "skills_env": ["MINIMAX_DATA_DIR", "MAVIS_DATA_DIR"], "npm_pkg": "@minimax-ai/code",         "provider_env": ["MCODE_PROVIDER_API_KEY"], "mcp": "minimax-code", "node_requirement": ">=22.19.0 <23.0.0 || >=24.0.0 <27.0.0", "home": "https://agent.minimax.cn/docs/cli/quick-start" },
     "pi":           { "name": "Pi (pi-coding-agent)",  "bin": ["pi"],                "config": "~/.pi",                 "skills": "~/.pi/agent/skills",       "npm_pkg": "@earendil-works/pi-coding-agent", "provider_env": ["OPENAI_API_KEY", "ANTHROPIC_API_KEY"], "home": "https://pi.dev" },
     "zcode":        { "name": "ZCode",                 "bin": ["zcode"],             "config": "~/.zcode",              "skills": "~/.agents/skills",         "npm_pkg": null,                       "provider_env": [], "no_version": true, "home": "https://zcode.ai" },
     "cursor":       { "name": "Cursor",                "bin": ["cursor"],            "config": "~/.cursor",             "skills": "~/.cursor/skills",         "npm_pkg": null,                       "provider_env": [], "no_version": true, "mcp": "cursor", "home": "https://cursor.com" },
@@ -15,14 +16,14 @@
     "aider":        { "name": "Aider",                 "bin": ["aider"],             "config": "~/.config/aider",       "skills": null,                      "npm_pkg": null,                       "provider_env": ["OPENAI_API_KEY"], "home": "https://aider.chat" },
     "qwen-code":    { "name": "Qwen Code",             "bin": ["qwen-code"],         "config": "~/.qwen-code",          "skills": null,                      "npm_pkg": "@qwen-code/qwen-code",     "provider_env": ["DASHSCOPE_API_KEY"], "home": "https://qwen.ai" },
     "amp":          { "name": "Amp",                   "bin": ["amp"],               "config": "~/.config/amp",         "skills": "~/.config/amp/tools",      "npm_pkg": null,                       "provider_env": [], "home": "https://amp.dev" },
-    "droid":        { "name": "Droid",                 "bin": ["droid"],             "config": "~/.factory",            "skills": "~/.factory/skills",        "npm_pkg": null,                       "provider_env": [], "home": "https://getdroid.ai" }
+    "droid":        { "name": "Droid",                 "bin": ["droid"],             "config": "~/.factory",            "skills": "~/.factory/skills",        "npm_pkg": null,                       "provider_env": [], "home": "https://getdroid.ai" },
+    "dsh":          { "name": "DeepSeek Harness",      "bin": ["dsh"],               "config": null,                    "skills": null,                       "npm_pkg": "@deepseek-ai/dsh",         "provider_env": [], "command_only": true, "home": "https://github.com/deepseek-ai/DeepSeek-Harness" }
   },
   "issues": [
     {
       "id": "npm-postinstall-skipped",
       "title": "npm postinstall skipped -> native binary missing",
-      "agents": ["all"],
-      "dynamic": true,
+      "agents": ["claude-code", "codex", "opencode", "pi", "gemini", "qwen-code", "kimi-code", "minimax-code"],
       "symptoms": [
         "{name} --version fails with 'postinstall script was not run' / 'native binary not installed'",
         "GUI tools show the agent as 'installed but cannot run'"
@@ -35,14 +36,13 @@
         },
         {
           "name": "{name} binary runs (npm-postinstall)",
-          "cmd": "{bin} --version 2>&1 || true",
+          "cmd": "{bin} --version 2>&1",
           "pass": { "stdout_not_contains": ["postinstall", "native binary", "not installed", "Error", "command not found", "not recognized"] }
         }
       ],
       "fixes": [
         {
           "name": "Re-run {name} install/postinstall script",
-          "dynamic_agent": true,
           "cwd": "npm_root/{npm_pkg}",
           "cmd": "node -e \"const s=require('./package.json').scripts||{};const f=s.postinstall||s.install;if(!f){console.error('no install/postinstall script');process.exit(1)}console.log('running:',f);require('child_process').execSync(f,{stdio:'inherit'})\""
         }
@@ -55,7 +55,7 @@
     {
       "id": "gui-path-blind",
       "title": "GUI apps (CC-Switch etc.) cannot see agent binaries",
-      "agents": ["claude-code", "codex", "opencode", "hermes", "cc-switch"],
+      "agents": ["claude-code", "codex", "opencode", "hermes"],
       "symptoms": [
         "CC-Switch or other GUI reports 'installed - cannot run'",
         "command works in terminal but not in GUI-launched processes"
@@ -63,12 +63,14 @@
       "checks": [
         {
           "name": "npm global dir in GUI PATH",
+          "agents": ["claude-code", "codex", "opencode"],
           "platform": "windows",
           "cmd": "powershell -NoProfile -Command \"\\$d=[Environment]::GetEnvironmentVariable('Path','User')+';'+[Environment]::GetEnvironmentVariable('Path','Machine');if(\\$d -match 'npm'){Write-Output 'FOUND'}else{Write-Output 'MISSING'}\"",
           "pass": { "stdout_contains": ["FOUND"] }
         },
         {
           "name": "hermes bin dir in GUI PATH",
+          "agents": ["hermes"],
           "platform": "windows",
           "cmd": "powershell -NoProfile -Command \"\\$d=[Environment]::GetEnvironmentVariable('Path','User')+';'+[Environment]::GetEnvironmentVariable('Path','Machine');if(\\$d -match 'hermes'){Write-Output 'FOUND'}else{Write-Output 'MISSING'}\"",
           "pass": { "stdout_contains": ["FOUND"] }
@@ -77,11 +79,13 @@
       "fixes": [
         {
           "name": "Add npm global dir to user PATH (registry)",
+          "agents": ["claude-code", "codex", "opencode"],
           "platform": "windows",
           "cmd": "powershell -NoProfile -Command \"\\$d=[Environment]::GetEnvironmentVariable('Path','User');\\$p=(npm config get prefix);if(\\$d -notmatch [regex]::Escape(\\$p)){[Environment]::SetEnvironmentVariable('Path',\\$d+';'+\\$p,'User');Write-Output ('Added: '+\\$p)}else{Write-Output 'npm dir already in user PATH'}\""
         },
         {
           "name": "Add hermes bin dir to user PATH (registry)",
+          "agents": ["hermes"],
           "platform": "windows",
           "cmd": "powershell -NoProfile -Command \"\\$d=[Environment]::GetEnvironmentVariable('Path','User');\\$p=(Split-Path (Get-Command hermes -ErrorAction SilentlyContinue).Source -Parent);if(\\$p -and \\$d -notmatch [regex]::Escape(\\$p)){[Environment]::SetEnvironmentVariable('Path',\\$d+';'+\\$p,'User');Write-Output ('Added: '+\\$p)}else{Write-Output 'hermes dir already in user PATH or hermes not found'}\""
         }
@@ -89,11 +93,13 @@
       "verify": [
         {
           "name": "npm dir visible to GUI PATH",
+          "agents": ["claude-code", "codex", "opencode"],
           "platform": "windows",
           "cmd": "powershell -NoProfile -Command \"\\$d=[Environment]::GetEnvironmentVariable('Path','User')+';'+[Environment]::GetEnvironmentVariable('Path','Machine');if(\\$d -match 'npm'){Write-Output 'OK'}else{Write-Output 'STILL-MISSING'}\""
         },
         {
           "name": "hermes dir visible to GUI PATH",
+          "agents": ["hermes"],
           "platform": "windows",
           "cmd": "powershell -NoProfile -Command \"\\$d=[Environment]::GetEnvironmentVariable('Path','User')+';'+[Environment]::GetEnvironmentVariable('Path','Machine');if(\\$d -match 'hermes'){Write-Output 'OK'}else{Write-Output 'STILL-MISSING'}\""
         }
@@ -103,7 +109,7 @@
     {
       "id": "node-version-too-old",
       "title": "Node too old for the agent",
-      "agents": ["claude-code", "codex", "opencode"],
+      "agents": ["claude-code", "codex", "opencode", "pi", "gemini", "qwen-code", "kimi-code", "minimax-code"],
       "symptoms": [
         "EBADENGINE / 'Unsupported engine' during npm install",
         "agent crashes at startup with a SyntaxError or engines message"
@@ -111,13 +117,12 @@
       "checks": [
         {
           "name": "node is installed",
-          "cmd": "node -v 2>&1 || true",
+          "cmd": "node -v 2>&1",
           "pass": { "stdout_not_contains": ["not recognized", "command not found"] }
         },
         {
-          "name": "node major >= 20",
-          "cmd": "node -e \"const m=Number(process.versions.node.split('.')[0]);process.exit(m>=20?0:1)\"",
-          "pass": { "exit": 0 }
+          "name": "node satisfies the agent engine requirement",
+          "kind": "node_requirement"
         }
       ],
       "fixes": [
@@ -128,14 +133,14 @@
         }
       ],
       "verify": [
-        { "name": "node -v", "cmd": "node -v 2>&1" }
+        { "name": "node satisfies the agent engine requirement", "kind": "node_requirement" }
       ],
       "doc": "fixes/node-version.md"
     },
     {
       "id": "npm-registry-mirror",
       "title": "npm registry slow or unreachable",
-      "agents": ["claude-code", "codex", "opencode", "npm-cli"],
+      "agents": ["claude-code", "codex", "opencode", "pi", "gemini", "qwen-code", "kimi-code", "minimax-code"],
       "symptoms": [
         "npm install/upgrade hangs or fails with ETIMEDOUT/ECONNRESET",
         "agent upgrades fail mid-way and leave postinstall skipped"
@@ -143,7 +148,7 @@
       "checks": [
         {
           "name": "npm registry reachable",
-          "cmd": "npm ping 2>&1 || true",
+          "cmd": "npm ping 2>&1",
           "timeout": 45,
           "pass": { "stdout_contains": ["PONG"] }
         }
@@ -164,7 +169,6 @@
       "id": "agent-auth-broken",
       "title": "Agent not logged in / expired auth / missing API key",
       "agents": ["all"],
-      "dynamic": true,
       "symptoms": [
         "'Not logged in' or 401 Unauthorized on every prompt",
         "--version works but real prompts fail"
@@ -172,20 +176,20 @@
       "checks": [
         {
           "name": "{name}: credential file or auth env present",
-          "cmd": "test -n \\\"{keys}\\\" && { env | grep -qE '{keys}' && echo KEY-SET || { test -n \\\"{config}\\\" && test -d {config} && echo CONFIG-OK || echo NO; }; } || { test -n \\\"{config}\\\" && test -d {config} && echo CONFIG-OK || echo NO; }",
+          "kind": "env_keys",
+
           "pass": { "stdout_contains_any": ["KEY-SET", "CONFIG-OK"] }
         }
       ],
       "fixes": [
         {
           "name": "Interactive login for {name} (manual, see doc)",
-          "dynamic_agent": true,
           "manual": true,
           "cmd": "echo 'Manual step: log in to {name} (or set the provider key/base URL per fixes/agent-auth.md)'"
         }
       ],
       "verify": [
-        { "name": "{name}: auth configured", "cmd": "test -n \\\"{keys}\\\" && { env | grep -qE '{keys}' && echo OK || { test -d {config} && echo OK || echo NO; }; } || { test -d {config} && echo OK || echo NO; }" }
+
       ],
       "doc": "fixes/agent-auth.md"
     },
@@ -193,7 +197,6 @@
       "id": "provider-config",
       "title": "Agent provider not configured (no API key / base URL / model)",
       "agents": ["all"],
-      "dynamic": true,
       "symptoms": [
         "agent starts but every prompt fails with 401 / 'model not found' / 'no provider'",
         "user wants to switch an agent to ANY provider (DeepSeek, OpenAI, Anthropic, Google, Moonshot, Zhipu, Qwen, Ollama, OpenRouter, custom)",
@@ -202,20 +205,20 @@
       "checks": [
         {
           "name": "{name}: provider configured (key env or config home)",
-          "cmd": "env | grep -qE '{keys}' && echo KEY-SET || { test -d {config} && echo CONFIG-OK || echo NO; }",
+          "kind": "env_keys",
+
           "pass": { "stdout_contains_any": ["KEY-SET", "CONFIG-OK"] }
         }
       ],
       "fixes": [
         {
           "name": "Configure a provider for {name} (manual — any provider, see fixes/provider-config.md)",
-          "dynamic_agent": true,
           "manual": true,
-          "cmd": "echo 'Manual step: set the provider key/base URL/model per fixes/provider-config.md, or use the MCP provider_setup tool for auto-generated snippets'"
+          "cmd": "echo 'Manual step: set the provider key/base URL/model per fixes/provider-config.md, or use the MCP provider tool for auto-generated snippets'"
         }
       ],
       "verify": [
-        { "name": "{name}: provider configured", "cmd": "env | grep -qE '{keys}' && echo OK || { test -d {config} && echo OK || echo NO; }" }
+
       ],
       "doc": "fixes/provider-config.md"
     },
@@ -223,7 +226,6 @@
       "id": "agent-broken-generic",
       "title": "Any installed agent binary fails to run (postinstall / native binary / missing)",
       "agents": ["all"],
-      "dynamic": true,
       "symptoms": [
         "any AI coding agent reports errors on --version after install/upgrade",
         "GUI tools show any agent as 'installed but cannot run'"
@@ -231,7 +233,7 @@
       "checks": [
         {
           "name": "{name} binary runs",
-          "cmd": "{bin} --version 2>&1 || true",
+          "cmd": "{bin} --version 2>&1",
           "pass": {
             "stdout_not_contains": [
               "postinstall script was not run",
@@ -249,16 +251,9 @@
       ],
       "fixes": [
         {
-          "name": "Re-run {name} npm install/postinstall script",
-          "dynamic_agent": true,
-          "cwd": "npm_root/{npm_pkg}",
-          "cmd": "node -e \"const s=require('./package.json').scripts||{};const f=s.postinstall||s.install;if(!f){console.error('no install/postinstall script');process.exit(1)}console.log('running:',f);require('child_process').execSync(f,{stdio:'inherit'})\""
-        },
-        {
-          "name": "{name} is not npm-installed — reinstall or repair manually (see fixes/agent-matrix.md)",
-          "dynamic_agent": true,
+          "name": "Route {name} to the matching repair path",
           "manual": true,
-          "cmd": "echo 'Manual step: consult fixes/agent-matrix.md for {name} install/config details'"
+          "cmd": "echo 'Manual step: for an npm-distributed {name}, run fix apply npm-postinstall-skipped with the same --agent id; for native/desktop agents consult fixes/agent-matrix.md'"
         }
       ],
       "verify": [
@@ -268,23 +263,20 @@
     },
     {
       "id": "net-connectivity",
-      "title": "Agent API endpoints unreachable (network / proxy / DNS)",
-      "agents": ["all"],
+      "title": "Agent API endpoint unreachable (network / proxy / DNS)",
+      "agents": ["claude-code", "codex", "opencode", "pi", "kimi-code", "zcode", "gemini", "aider", "qwen-code"],
       "symptoms": [
         "agents fail with connection timeouts / ETIMEDOUT / ECONNRESET",
         "'suddenly stopped working' across multiple agents at once",
         "slow responses from one provider but not others"
       ],
       "checks": [
-        { "name": "anthropic (claude-code) reachable", "kind": "net", "host": "api.anthropic.com", "port": 443, "timeout": 5 },
-        { "name": "openai (codex) reachable", "kind": "net", "host": "api.openai.com", "port": 443, "timeout": 5 },
-        { "name": "deepseek reachable", "kind": "net", "host": "api.deepseek.com", "port": 443, "timeout": 5 },
-        { "name": "moonshot (kimi) reachable", "kind": "net", "host": "api.moonshot.cn", "port": 443, "timeout": 5 },
-        { "name": "google (gemini) reachable", "kind": "net", "host": "generativelanguage.googleapis.com", "port": 443, "timeout": 5 },
-        { "name": "zhipu (zcode/glm) reachable", "kind": "net", "host": "open.bigmodel.cn", "port": 443, "timeout": 5 },
-        { "name": "alibaba (qwen) reachable", "kind": "net", "host": "dashscope.aliyuncs.com", "port": 443, "timeout": 5 },
-        { "name": "github (gh/actions) reachable", "kind": "net", "host": "api.github.com", "port": 443, "timeout": 5 },
-        { "name": "npm registry reachable", "kind": "net", "host": "registry.npmjs.org", "port": 443, "timeout": 5 }
+        { "name": "anthropic (claude-code) reachable", "agents": ["claude-code"], "kind": "net", "host": "api.anthropic.com", "port": 443, "timeout": 5 },
+        { "name": "openai-compatible endpoint reachable", "agents": ["codex", "opencode", "pi", "aider"], "kind": "net", "host": "api.openai.com", "port": 443, "timeout": 5 },
+        { "name": "kimi (kimi-code) reachable", "agents": ["kimi-code"], "kind": "net", "host": "api.moonshot.ai", "port": 443, "timeout": 5 },
+        { "name": "google (gemini) reachable", "agents": ["gemini"], "kind": "net", "host": "generativelanguage.googleapis.com", "port": 443, "timeout": 5 },
+        { "name": "zhipu (zcode/glm) reachable", "agents": ["zcode"], "kind": "net", "host": "open.bigmodel.cn", "port": 443, "timeout": 5 },
+        { "name": "alibaba (qwen) reachable", "agents": ["qwen-code"], "kind": "net", "host": "dashscope.aliyuncs.com", "port": 443, "timeout": 5 }
       ],
       "fixes": [
         {
@@ -294,8 +286,12 @@
         }
       ],
       "verify": [
-        { "name": "deepseek reachable", "kind": "net", "host": "api.deepseek.com", "port": 443, "timeout": 5 },
-        { "name": "npm registry reachable", "kind": "net", "host": "registry.npmjs.org", "port": 443, "timeout": 5 }
+        { "name": "anthropic (claude-code) reachable", "agents": ["claude-code"], "kind": "net", "host": "api.anthropic.com", "port": 443, "timeout": 5 },
+        { "name": "openai-compatible endpoint reachable", "agents": ["codex", "opencode", "pi", "aider"], "kind": "net", "host": "api.openai.com", "port": 443, "timeout": 5 },
+        { "name": "kimi (kimi-code) reachable", "agents": ["kimi-code"], "kind": "net", "host": "api.moonshot.ai", "port": 443, "timeout": 5 },
+        { "name": "google (gemini) reachable", "agents": ["gemini"], "kind": "net", "host": "generativelanguage.googleapis.com", "port": 443, "timeout": 5 },
+        { "name": "zhipu (zcode/glm) reachable", "agents": ["zcode"], "kind": "net", "host": "open.bigmodel.cn", "port": 443, "timeout": 5 },
+        { "name": "alibaba (qwen) reachable", "agents": ["qwen-code"], "kind": "net", "host": "dashscope.aliyuncs.com", "port": 443, "timeout": 5 }
       ],
       "doc": "fixes/net-connectivity.md"
     },
@@ -310,12 +306,12 @@
       "checks": [
         {
           "name": "opencode session list validates config",
-          "cmd": "opencode session list 2>&1 | head -5",
+          "cmd": "opencode session list 2>&1",
           "pass": { "stdout_not_contains": ["ConfigInvalidError", "Configuration is invalid"] }
         },
         {
           "name": "no stdio-type entries in opencode.json mcp block",
-          "cmd": "grep -nE '\"type\"[[:space:]]*:[[:space:]]*\"stdio\"' \"$HOME/.config/opencode/opencode.json\" 2>/dev/null && echo BAD || echo OK",
+          "cmd": "node -e \"const fs=require('fs'),os=require('os'),path=require('path');const p=path.join(os.homedir(),'.config','opencode','opencode.json');if(!fs.existsSync(p))process.exit(2);const s=fs.readFileSync(p,'utf8');if(/\\\"type\\\"\\s*:\\s*\\\"stdio\\\"/.test(s)){console.error('BAD');process.exit(1)}console.log('OK')\"",
           "pass": { "stdout_contains": ["OK"] }
         }
       ],
@@ -323,12 +319,12 @@
         {
           "name": "Rewrite invalid mcp entries to local/remote schema (see doc)",
           "manual": true,
-          "cmd": "echo 'Manual/edit step: see fixes/opencode-mcp-schema.md — each mcp.<name> must be type=local with command ARRAY + enabled, or type=remote with url + enabled. Re-run scripts/mcp_register.py after fixing.'"
+          "cmd": "echo 'Manual/edit step: see fixes/opencode-mcp-schema.md — each mcp.<name> must be type=local with command ARRAY + enabled, or type=remote with url + enabled. Re-run python scripts/fix.py mcp register opencode after fixing.'"
         }
       ],
       "verify": [
-        { "name": "opencode session list", "cmd": "opencode session list 2>&1 | head -5" },
-        { "name": "opencode smoke run", "cmd": "opencode run 'Respond with exactly: OK' 2>&1 | tail -3" }
+        { "name": "opencode session list", "cmd": "opencode session list 2>&1" },
+        { "name": "opencode smoke run", "cmd": "opencode run 'Respond with exactly: OK' 2>&1" }
       ],
       "doc": "fixes/opencode-mcp-schema.md"
     },
@@ -344,7 +340,7 @@
       "checks": [
         {
           "name": "dsh binary runs",
-          "cmd": "dsh --version 2>&1 || true",
+          "cmd": "dsh --version 2>&1",
           "pass": { "stdout_not_contains": ["not recognized", "command not found", "cannot find module", "internal/modules/cjs/loader", "node:internal"] }
         },
         {
@@ -354,8 +350,13 @@
         },
         {
           "name": "@deepseek-ai/dsh package installed (global)",
-          "cmd": "node -e \"const{execSync}=require('child_process');const root=execSync('npm root -g').toString().trim();const p=root+'/@deepseek-ai/dsh/package.json';require('fs').accessSync(p);console.log('FOUND '+p)\" 2>&1 || true",
+          "cmd": "node -e \"const{execSync}=require('child_process');const root=execSync('npm root -g').toString().trim();const p=root+'/@deepseek-ai/dsh/package.json';require('fs').accessSync(p);console.log('FOUND '+p)\" 2>&1",
           "pass": { "stdout_contains": ["FOUND"] }
+        },
+        {
+          "name": "dsh web help (bundle boot smoke)",
+          "cmd": "dsh web --help 2>&1",
+          "pass": { "exit": 0 }
         }
       ],
       "fixes": [
@@ -372,7 +373,8 @@
       ],
       "verify": [
         { "name": "dsh --version", "cmd": "dsh --version 2>&1" },
-        { "name": "dsh --help (boot smoke)", "cmd": "dsh --help 2>&1" }
+        { "name": "dsh --help (boot smoke)", "cmd": "dsh --help 2>&1" },
+        { "name": "dsh web --help (web bundle smoke)", "cmd": "dsh web --help 2>&1" }
       ],
       "doc": "fixes/deepseek-harness.md"
     }

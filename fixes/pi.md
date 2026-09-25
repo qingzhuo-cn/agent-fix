@@ -23,8 +23,9 @@ Install: `npm install -g @earendil-works/pi-coding-agent` (or `npx
 ## Common failures & fixes
 
 1. **`pi: command not found` / postinstall skipped** — the classic npm issue:
-   - Fix: `fix apply agent-broken-generic --yes` (re-runs the package lifecycle
-     script in `$(npm root -g)/@earendil-works/pi-coding-agent`), or manually:
+   - Fix: `fix apply npm-postinstall-skipped --agent pi --yes` (re-runs the package
+     lifecycle script in `$(npm root -g)/@earendil-works/pi-coding-agent`), or
+     manually:
      ```bash
      cd "$(npm root -g)/@earendil-works/pi-coding-agent" && node -e "const s=require('./package.json').scripts||{};const f=s.postinstall||s.install;f&&require('child_process').execSync(f,{stdio:'inherit'})"
      ```
@@ -53,6 +54,6 @@ export ANTHROPIC_AUTH_TOKEN="sk-<your-deepseek-key>"
 ## Verification
 
 ```bash
-pi --version || pi --help | head -3               # binary OK
-fix check agent-broken-generic                    # included in doctor
+pi --version 2>&1                            # binary OK; do not pipe away exit status
+fix check npm-postinstall-skipped --agent pi      # explicit target only
 ```

@@ -1,32 +1,8 @@
 #!/usr/bin/env python3
-"""agentfix.cli — the `fix` command-line interface.
+"""agentfix.cli — the explicit-target `fix` command-line interface.
 
-    fix list                        # list all known issues
-    fix agents                      # which agents are installed
-    fix check [id ...]              # run diagnostics (all issues by default)
-    fix doctor                      # alias for `fix check`
-    fix apply <id> [--yes]          # apply fixes for one issue, then verify
-    fix auto                        # check all -> auto-apply fixes for broken ones
-    fix selfheal                    # like auto, but silent when healthy + hard deadline
-    fix info <id>                   # print the matching doc from fixes/
-    fix net [--timeout N]           # network diagnostics (TCP + proxy env)
-    fix hooks install|uninstall|status [--agent id]   # self-heal startup hooks
-    fix mcp register|remove [agent] # MCP server registration
-    fix install | uninstall         # deploy/remove the whole skill
-
-    # Program (importable API)
-    from agentfix import catalog, engine
-    result = engine.check_issue(catalog.load_catalog()["issues"][0], quiet=True)
-
-Exit codes (useful for cron / CI / watchdog wrappers):
-    0  all checks passed
-    1  at least one check failed
-    2  usage error / catalog missing
-
-`fix selfheal` is the agent-startup hook command: prints NOTHING when everything
-is healthy (so hooks stay quiet), prints one concise line when it fixed or could
-not fix something, and self-aborts after a hard deadline so it never blocks an
-agent from starting.
+Repair commands always require one issue and one target agent. They never scan,
+repair, or verify another agent on the machine.
 
 Pure stdlib, no dependencies. Python 3.8+.
 """
@@ -41,6 +17,21 @@ from typing import List, Optional
 from agentfix import __version__
 from agentfix import catalog as cat
 from agentfix import engine, hooks
+from agentfix import report as rep
+from agentfix import result as operation_result
+
+
+def _json_text(value, indent: Optional[int] = None) -> str:
+    """Serialize one JSON document and apply the final secret-mask boundary."""
+    return rep.mask_secrets(json.dumps(value, indent=indent, ensure_ascii=False))
+
+
+def _emit_error(exc: Exception, as_json: bool) -> None:
+    message = rep.mask_secrets(str(exc))
+    if as_json:
+        print(_json_text({"status": "error", "error": message}))
+    else:
+        print(message, file=sys.stderr)
 
 
 def cmd_list(catalog, args) -> int:
@@ -50,45 +41,59 @@ def cmd_list(catalog, args) -> int:
     for issue in catalog["issues"]:
         agents = ", ".join(issue.get("agents", []))[:40]
         print(f"{issue['id']:<26} {agents:<42} {issue['title']}")
-    print(
-        "\nCommands: fix check [id...] | fix doctor | fix apply <id> [--yes] | fix auto"
-        " | fix info <id> | fix net | fix hooks | fix mcp | fix install"
-    )
+    print("\nCommands: fix check <id> --agent <agent-id> | fix apply <id> --agent <agent-id> [--yes]")
     return 0
 
 
 def cmd_check(catalog, args) -> int:
-    ids = args.ids or [i["id"] for i in catalog["issues"]]
-    agents = cat.detect_agents(catalog)
-    any_broken = False
-    for issue_id in ids:
-        issue = cat.find_issue(catalog, issue_id)
-        if not issue:
-            print(f"unknown issue: {issue_id}", file=sys.stderr)
-            return 2
-        print(f"== {issue['id']}: {issue['title']}")
-        state = engine.check_issue(issue, agents=agents)
-        if state["broken"]:
-            any_broken = True
-            print(f"   -> BROKEN. Fix with: fix apply {issue['id']} --yes")
-        else:
-            print("   -> healthy")
+    issue = cat.find_issue(catalog, args.id)
+    if not issue:
+        _emit_error(engine.TargetError(f"unknown issue: {args.id}"), args.json)
+        return 2
+    try:
+        agent = engine.resolve_target(catalog, issue, args.agent)
+        if not args.json:
+            print(f"== {issue['id']}: {issue['title']} [{args.agent}]")
+        state = engine.check_issue(issue, agent=agent, quiet=args.json)
+    except engine.TargetError as exc:
+        _emit_error(engine.TargetError(f"target error: {exc}"), args.json)
+        return 2
+    except Exception as exc:
+        _emit_error(exc, args.json)
+        return 1
     if args.json:
-        print(json.dumps({"broken": any_broken, "checked": ids}, indent=2))
-    return 1 if any_broken else 0
+        print(_json_text(state, indent=2))
+    elif state.get("broken") or state.get("status") == "FAIL":
+        print(f"   -> BROKEN. Fix with: fix apply {issue['id']} --agent {args.agent} --yes")
+    elif state.get("status") == "INCONCLUSIVE":
+        print("   -> inconclusive; no authoritative check passed")
+    else:
+        print("   -> healthy")
+    return 1 if state.get("broken") or state.get("status") in {"FAIL", "INCONCLUSIVE"} else 0
 
 
 def cmd_apply(catalog, args) -> int:
     issue = cat.find_issue(catalog, args.id)
     if not issue:
-        print(f"unknown issue: {args.id}", file=sys.stderr)
+        _emit_error(engine.TargetError(f"unknown issue: {args.id}"), args.json)
         return 2
-    agents = cat.detect_agents(catalog)
-    print(f"== {issue['id']}: {issue['title']}")
-    print(f"   doc: {issue.get('doc', 'n/a')}")
-    outcome = engine.apply_issue(issue, yes=args.yes, agents=agents)
+    try:
+        agent = engine.resolve_target(catalog, issue, args.agent)
+        if not args.json:
+            print(f"== {issue['id']}: {issue['title']} [{args.agent}]")
+            print(f"   doc: {issue.get('doc', 'n/a')}")
+        outcome = engine.apply_issue(
+            issue, agent=agent, yes=args.yes, quiet=args.json
+        )
+    except engine.TargetError as exc:
+        _emit_error(engine.TargetError(f"target error: {exc}"), args.json)
+        return 2
+    except Exception as exc:
+        _emit_error(exc, args.json)
+        return 1
     if args.json:
-        print(json.dumps(outcome, indent=2))
+        print(_json_text(outcome, indent=2))
+        return 0 if outcome["verified"] else 1
     if outcome["verified"]:
         print("\n=> verified OK")
         return 0
@@ -96,86 +101,64 @@ def cmd_apply(catalog, args) -> int:
     return 1
 
 
-def cmd_selfheal(catalog, args, deadline: float = 75.0) -> int:
-    """Hook mode: prints nothing on success."""
-    r = engine.run_selfheal(catalog, deadline=deadline)
-    if r["timed_out"]:
-        print("agent-fix selfheal: timed out — run 'fix doctor' manually")
-        return 2
-    if not r["fixed"] and not r["unfixed"]:
-        return 0  # healthy — stay silent for hooks
-    parts = []
-    if r["fixed"]:
-        parts.append("fixed: " + ", ".join(r["fixed"]))
-    if r["unfixed"]:
-        parts.append("still broken: " + ", ".join(r["unfixed"]))
-    print("agent-fix selfheal — " + "; ".join(parts))
-    return 1 if r["unfixed"] else 0
-
-
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="fix", description="Universal agent repair CLI (agent-fix skill)")
+    parser = argparse.ArgumentParser(prog="fix", description="Explicit-target agent repair CLI (agent-fix skill)")
     parser.add_argument("--version", action="version", version=f"agent-fix {__version__}")
-    parser.add_argument("--json", action="store_true", help="machine-readable output where supported")
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        help="machine-readable check/apply output (place before command)",
+    )
     sub = parser.add_subparsers(dest="command", required=True)
 
-    def _json_opt(p: argparse.ArgumentParser) -> None:
-        # allow `fix check --json` as well as `fix --json check`
-        p.add_argument("--json", action="store_true", default=argparse.SUPPRESS, help=argparse.SUPPRESS)
-
-    p_list = sub.add_parser("list", help="list known issues")
-    _json_opt(p_list)
-    p_agents = sub.add_parser("agents", help="list known agents and which are installed")
-    _json_opt(p_agents)
-    p_check = sub.add_parser("check", help="run diagnostics for issues (default: all)")
-    _json_opt(p_check)
-    p_check.add_argument("ids", nargs="*", help="issue ids, e.g. npm-postinstall-skipped")
-    p_doc = sub.add_parser("doctor", help="alias for: fix check")
-    _json_opt(p_doc)
-    p_apply = sub.add_parser("apply", help="apply fixes for one issue")
-    _json_opt(p_apply)
-    p_apply.add_argument("id", help="issue id")
-    p_apply.add_argument("--yes", "-y", action="store_true", help="run fixes without prompting")
-    p_auto = sub.add_parser("auto", help="check all; auto-apply fixes for broken ones (watchdog mode)")
-    _json_opt(p_auto)
-    p_selfheal = sub.add_parser(
-        "selfheal",
-        help="check all + auto-fix; silent when healthy, hard deadline (agent startup hook mode)",
+    sub.add_parser("list", help="list known issues")
+    sub.add_parser("agents", help="list known agents and which are installed")
+    p_check = sub.add_parser("check", help="check one issue for one explicit agent")
+    p_check.add_argument(
+        "--json",
+        action="store_true",
+        default=argparse.SUPPRESS,
+        help="machine-readable output",
     )
-    _json_opt(p_selfheal)
+    p_check.add_argument("id", help="issue id, e.g. npm-postinstall-skipped")
+    p_check.add_argument("--agent", required=True, help="target agent id, e.g. opencode")
+    p_apply = sub.add_parser("apply", help="apply and verify one issue for one explicit agent")
+    p_apply.add_argument(
+        "--json",
+        action="store_true",
+        default=argparse.SUPPRESS,
+        help="machine-readable output",
+    )
+    p_apply.add_argument("id", help="issue id")
+    p_apply.add_argument("--agent", required=True, help="target agent id")
+    p_apply.add_argument("--yes", "-y", action="store_true", help="run fixes without prompting")
     p_info = sub.add_parser("info", help="print the doc for an issue")
-    _json_opt(p_info)
     p_info.add_argument("id", help="issue id")
-    p_net = sub.add_parser("net", help="network diagnostics (TCP connectivity + proxy env)")
+    p_net = sub.add_parser("net", help="network diagnostics for one explicit endpoint")
+    p_net.add_argument("host", help="hostname to check")
     p_net.add_argument("--timeout", type=float, default=5.0, help="connect timeout seconds (default 5)")
-
-    p_hooks = sub.add_parser("hooks", help="manage self-heal startup hooks (claude/codex/opencode/hermes)")
-    h_sub = p_hooks.add_subparsers(dest="hooks_command", required=True)
-    for verb, help_text in (("install", "register startup hooks"), ("uninstall", "remove startup hooks"), ("status", "show what is registered")):
-        h = h_sub.add_parser(verb, help=help_text)
-        h.add_argument("--agent", help="only this agent id (e.g. claude-code)")
-
-    p_mcp = sub.add_parser("mcp", help="register/unregister the MCP server with agents")
+    p_mcp = sub.add_parser("mcp", help="register/unregister the MCP server with one agent")
     m_sub = p_mcp.add_subparsers(dest="mcp_command", required=True)
-    m_add = m_sub.add_parser("register", help="register with every installed MCP-capable agent")
-    m_add.add_argument("agent", nargs="?", help="one agent id (default: all detected)")
-    m_rm = m_sub.add_parser("remove", help="unregister")
-    m_rm.add_argument("agent", nargs="?", help="one agent id (default: all)")
-
-    sub.add_parser("install", help="deploy the skill into every detected agent (+ hooks, MCP, CLI)")
-    sub.add_parser("uninstall", help="remove everything `fix install` deployed")
+    for verb, help_text in (("register", "register with one detected MCP-capable agent"), ("remove", "unregister from one agent")):
+        m = m_sub.add_parser(verb, help=help_text)
+        m.add_argument("agent", help="one agent id")
+    p_install = sub.add_parser("install", help="deploy skill files for one explicit agent")
+    p_install.add_argument("--agent", required=True, help="target agent id")
+    p_uninstall = sub.add_parser("uninstall", help="remove skill files and registrations for one explicit agent")
+    p_uninstall.add_argument("--agent", required=True, help="target agent id")
     return parser
 
 
 def main(argv: Optional[List[str]] = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+    if args.json and args.command not in {"check", "apply"}:
+        parser.error("--json is supported only by check and apply")
     try:
         catalog = cat.load_catalog()
-    except FileNotFoundError as e:
-        print(f"error: {e}", file=sys.stderr)
+    except Exception as exc:
+        _emit_error(exc, bool(getattr(args, "json", False)))
         return 2
-
     if args.command == "list":
         return cmd_list(catalog, args)
     if args.command == "agents":
@@ -183,54 +166,51 @@ def main(argv: Optional[List[str]] = None) -> int:
         return 0
     if args.command == "check":
         return cmd_check(catalog, args)
-    if args.command == "doctor":
-        args.ids = []
-        return cmd_check(catalog, args)
     if args.command == "apply":
         return cmd_apply(catalog, args)
-    if args.command == "auto":
-        report = engine.auto_fix(catalog)
-        print(f"\n== summary: {len(report['fixed'])} fixed, {len(report['unfixed'])} still broken")
-        return 1 if report["unfixed"] else 0
-    if args.command == "selfheal":
-        return cmd_selfheal(catalog, args)
     if args.command == "info":
-        issue = cat.find_issue(catalog, args.id)
-        if not issue:
-            print(f"unknown issue: {args.id}", file=sys.stderr)
+        try:
+            print(engine.info_text(args.id))
+        except engine.TargetError as exc:
+            _emit_error(exc, False)
             return 2
-        doc = cat.doc_path(issue)
-        print(doc.read_text(encoding="utf-8") if doc.exists() else f"doc missing: {doc}")
         return 0
     if args.command == "net":
-        print(engine.net_text(timeout=args.timeout))
-        return 0
-    if args.command == "hooks":
-        if args.hooks_command == "install":
-            lines = hooks.hooks_install(getattr(args, "agent", None))
-        elif args.hooks_command == "uninstall":
-            lines = hooks.hooks_uninstall(getattr(args, "agent", None))
-        else:
-            print("agent-fix self-heal: startup hook status\n")
-            lines = [hooks.hooks_status()]
-        for line in lines:
-            print("  " + line)
-        if args.hooks_command in ("install", "uninstall"):
-            print("\nDone. Verify with: fix hooks status")
-        return 0
+        if not getattr(args, "host", ""):
+            print("target host required: fix net <host>", file=sys.stderr)
+            return 2
+        try:
+            result = engine.net_result(timeout=args.timeout, host=args.host)
+        except engine.TargetError as exc:
+            print(f"target error: {exc}", file=sys.stderr)
+            return 2
+        print(engine.net_text_from_result(result, timeout=args.timeout))
+        return 0 if result.get("ok") else 1
     if args.command == "mcp":
-        lines = hooks.mcp_register(getattr(args, "agent", None)) if args.mcp_command == "register" else hooks.mcp_remove(getattr(args, "agent", None))
-        for line in lines:
+        operation = "mcp_register" if args.mcp_command == "register" else "mcp_remove"
+        lines = hooks.mcp_register(args.agent) if args.mcp_command == "register" else hooks.mcp_remove(args.agent)
+        result = operation_result.from_lines(
+            operation, lines, status=operation_result.aggregate_status(lines, "error")
+        )
+        for line in result.lines:
             print(line)
-        return 0
+        return 0 if result.ok else 1
     if args.command == "install":
-        for line in hooks.install_all():
+        lines = hooks.install_target(args.agent)
+        result = operation_result.from_lines(
+            "install_target", lines, status=operation_result.status_of(lines, "error")
+        )
+        for line in result.lines:
             print(line)
-        return 0
+        return 0 if result.ok else 1
     if args.command == "uninstall":
-        for line in hooks.uninstall_all():
+        lines = hooks.uninstall_target(args.agent)
+        result = operation_result.from_lines(
+            "uninstall_target", lines, status=operation_result.status_of(lines, "error")
+        )
+        for line in result.lines:
             print(line)
-        return 0
+        return 0 if result.ok else 1
     parser.print_help()
     return 2
 

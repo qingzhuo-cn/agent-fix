@@ -42,9 +42,8 @@ Any single bad entry invalidates the whole config, so even `session list` dies.
 ## Check
 
 ```bash
-opencode session list 2>&1 | head -5        # ConfigInvalidError? -> broken
-grep -nE '"type"[[:space:]]*:[[:space:]]*"stdio"' "$HOME/.config/opencode/opencode.json" 2>/dev/null
-# any match = the offending entry
+opencode session list 2>&1                    # inspect the real producer exit
+node -e "const fs=require('fs'),os=require('os'),path=require('path');const p=path.join(os.homedir(),'.config','opencode','opencode.json');if(!fs.existsSync(p))process.exit(2);const s=fs.readFileSync(p,'utf8');if(/\"type\"\s*:\s*\"stdio\"/.test(s)){console.error('offending entry');process.exit(1)}console.log('OK')"
 ```
 
 ## Fix
@@ -76,8 +75,8 @@ Notes:
 ## Verify
 
 ```bash
-opencode session list 2>&1 | head -5        # sessions listed, no ConfigInvalidError
-opencode run 'Respond with exactly: OK'     # MCP servers actually boot
+opencode session list 2>&1                    # sessions listed, no ConfigInvalidError
+opencode run 'Respond with exactly: OK' 2>&1  # MCP servers actually boot
 ```
 
 ## Prevention

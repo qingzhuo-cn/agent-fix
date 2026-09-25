@@ -1,9 +1,5 @@
-# install.ps1 — thin bootstrap: let the agent-fix CLI deploy itself.
-#
-# Everything (skill copies, AGENTS.md hooks, startup hooks, MCP registration,
-# the `fix` CLI shim) is implemented once in agentfix/hooks.py and driven by
-# catalog.json. This script only locates python. `fix uninstall` reverses it.
-# Idempotent: safe to re-run after `git pull`.
+# install.ps1 — thin bootstrap: locate Python, then delegate one explicit
+# install to the agent-fix CLI. Startup self-heal and MCP registration remain opt-in.
 
 $Repo = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 
@@ -14,5 +10,5 @@ if (-not $py) {
     exit 2
 }
 
-& $py.Source (Join-Path $Repo "scripts\fix.py") install
+& $py.Source (Join-Path $Repo "scripts\fix.py") install @args
 exit $LASTEXITCODE

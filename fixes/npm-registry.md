@@ -21,7 +21,7 @@ point npm (and often the agent's own package managers) at a reachable mirror.
 
 ```bash
 npm config get registry      # e.g. https://registry.npmjs.org/
-npm ping 2>&1 | head -3      # fails/slow = network path problem
+npm ping 2>&1                                # inspect the real producer exit
 ```
 
 ## Fix
@@ -56,7 +56,8 @@ npm install -g <agent>                     # completes; then run the agent's --v
 
 - Set the mirror once in `~/.npmrc` (`registry=...`) rather than per-command.
 - After any install/upgrade that may have skipped scripts, run
-  `fix check npm-postinstall-skipped` to confirm the binary is present.
+  `fix check npm-postinstall-skipped --agent <id>` to confirm that target's
+  binary is present.
 - GUI package managers (and some agent auto-updaters) may bypass your `~/.npmrc` —
   if an upgrade silently skips postinstall again, re-check that doc.
 

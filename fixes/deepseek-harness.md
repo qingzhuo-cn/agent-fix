@@ -41,8 +41,8 @@ node -e "const{execSync}=require('child_process');const root=execSync('npm root 
 Or run the agent-fix engine:
 
 ```bash
-fix check deepseek-harness-broken        # diagnose
-fix apply deepseek-harness-broken        # prints the manual reinstall + verifies
+fix check deepseek-harness-broken --agent dsh   # diagnose one target
+fix apply deepseek-harness-broken --agent dsh   # manual reinstall + verify
 ```
 
 ## Fix

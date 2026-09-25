@@ -1,105 +1,38 @@
-<div align="center">
-
-<p align="center">
-<img width="1000px" alt="agent-fix" src="docs/assets/banner.svg">
-</p>
-
 # agent-fix
 
-**One command heals broken AI coding agents.** Claude Code, Codex, OpenCode,
-Hermes, Kimi Code, Pi, ZCode, Cursor — when the install or upgrade silently breaks
-them, `fix apply <id>` diagnoses, repairs, and **verifies** in a single command.
-No dependencies. Cross-platform.
+**Repair the AI coding agent the user named, and nothing else.**
+
+`agent-fix` is a zero-dependency knowledge base and CLI for diagnosing, repairing,
+and verifying Claude Code, Codex, OpenCode, Hermes, Kimi Code, Pi, ZCode, Cursor,
+Gemini CLI, Aider, Qwen Code, Amp, Droid, and npm-distributed coding agents on
+Windows, macOS, and Linux.
 
 English / [简体中文](README_cn.md)
 
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)]()
-[![Python](https://img.shields.io/badge/python-3.8%2B-blue.svg)]()
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)]()
-[![GitHub stars](https://img.shields.io/github/stars/qingzhuo-cn/agent-fix?style=social)](https://github.com/qingzhuo-cn/agent-fix)
+## Core Rule
 
-</div>
+Every repair command requires one issue id and one explicit agent id:
 
-> #### 🩺 It really looks like this
->
-> ```console
-> $ fix doctor
-> == npm-postinstall-skipped: npm postinstall skipped -> native binary missing
->     [FAIL] opencode binary runs
->           Error: postinstall script was not run
->    -> BROKEN. Fix with: fix apply npm-postinstall-skipped --yes
->
-> $ fix apply npm-postinstall-skipped --yes
->     [FIX ] Re-run opencode postinstall        → ok (12.4s)
->     [FIX ] Re-run claude-code install script  → ok (1.1s)
->     [VERIFY OK] opencode --version            → v1.18.10
->     [VERIFY OK] claude --version              → 2.1.220 (Claude Code)
-> => verified OK
-> ```
->
-> ```console
-> $ fix doctor   # everything healthy? prints nothing
-> $ echo $?      # → 0
-> ```
-
-**▶ Try it in 30 seconds — no install, no dependencies:**
 ```bash
-git clone https://github.com/qingzhuo-cn/agent-fix.git && cd agent-fix
-./scripts/fix doctor   # or: powershell -File install\install.ps1 to install into your agents
+fix check npm-postinstall-skipped --agent opencode
+fix apply npm-postinstall-skipped --agent opencode --yes
 ```
 
-## Table of Contents
-
-- [Why agent-fix](#why-agent-fix)
-- [Features](#features)
-- [Quick Start](#quick-start)
-- [Usage](#usage)
-  - [CLI commands](#cli-commands)
-  - [Compatibility matrix](#compatibility-matrix)
-  - [Issue catalog](#issue-catalog)
-  - [Use it from your programs](#use-it-from-your-programs)
-  - [MCP server (14 tools for any agent)](#mcp-server-14-tools-for-any-agent)
-- [How it works](#how-it-works)
-- [Extending the catalog](#extending-the-catalog)
-- [FAQ](#faq)
-- [Related](#related)
-- [License](#license)
+The engine resolves only `opencode`, runs only the checks and fixes that apply to
+it, and verifies only `opencode`. It does not probe, repair, or validate any other
+installed agent or model.
 
 ## Why agent-fix
 
-AI coding agents are installed, upgraded, and switched by all kinds of tooling — npm,
-GUI switchers (CC-Switch), version managers — and when that tooling misbehaves, every
-agent breaks in familiar ways:
+Agent failures often share root causes:
 
-- `opencode --version` → **"postinstall script was not run"** (the classic
-  `ignore-scripts` / `--ignore-scripts` trap, recurring on **every upgrade**)
-- `claude --version` → **"native binary not installed"**
-- CC-Switch says **"installed · cannot run"** while the terminal works fine
-- `EBADENGINE`, `ETIMEDOUT`, `401 Unauthorized`, `Not logged in` …
+- `postinstall script was not run` or `native binary not installed`
+- GUI launchers report `installed but cannot run` while a terminal works
+- `EBADENGINE`, old Node, registry timeouts, or invalid MCP config
+- expired login, missing API key, or provider/model configuration errors
 
-Fixes for these are scattered across GitHub issues and chat logs. **agent-fix** collects
-them into one versioned, machine-readable catalog (`catalog.json`) plus human-readable
-docs (`fixes/*.md`), and ships a zero-dependency CLI (`scripts/fix.py`) that
-diagnoses, repairs, and verifies — on Windows, macOS, and Linux.
-
-It was born from a real recurring incident: OpenCode and Claude Code broke five times
-in five days on one machine, always the same root cause, always a different manual
-command. This skill makes that repair one command: `fix apply npm-postinstall-skipped --yes`.
-
-## Features
-
-- 🔧 **10 issue classes, 1 command** — `fix doctor` checks everything; `fix apply <id>` repairs and verifies
-- 🤖 **Only the agents you actually have** — an agent registry in `catalog.json` powers detection; `fix doctor` checks **every agent installed on your machine** (Claude Code, Codex, OpenCode, Hermes, Kimi Code, Pi, ZCode, and any other we detect). `fix agents` lists only what you've installed — the tool never names, lists, or exposes install commands for agents that are not present on your machine. New agents = one line of data, no code
-- 🖥️ **Cross-platform** — Windows (incl. Git Bash & WSL-aware), macOS, Linux
-- 🧩 **Skill + CLI + API** — loadable as a skill by agents, callable from a terminal, or importable as a Python module
-- ⚡ **MCP server** — a zero-dependency stdio MCP server (`mcp/server.py`, 14 generic verb tools + a review gate), so Claude Code, OpenCode, Cursor, ZCode, Codex can call `doctor`, `check`, `apply`, `net`, `provider`, … as native tools; the catalog's issue ids are the arguments, so new issues need no new tool code; `python mcp/smoke_test.py` regresses every tool
-- 📦 **Zero dependencies** — pure Python 3.8+ stdlib
-- 🔁 **Watchdog-ready** — `fix auto` checks and auto-repairs; non-zero exit on failure drops straight into cron/CI
-- 💉 **Self-heal on agent start** — installers register startup hooks (Claude Code `SessionStart`, Codex `[hooks] session_start`, OpenCode plugin, Hermes cron watchdog) so every agent checks & repairs itself the moment it launches; `fix selfheal` prints nothing when healthy
-- 🧪 **Verified fixes** — every fix ends with a real verification step, not just `--version`
-- 🔌 **DeepSeek Harness (`dsh`) repair** — the `deepseek-harness-broken` issue diagnoses a broken `dsh` launcher (binary missing / Node too old / incomplete plugin bundles); the reinstall is a documented manual step — the tool diagnoses and verifies, it never installs an agent itself
-- 🔐 **Secret-safe by default** — API keys / tokens are redacted from every output (`audit`, `logs`, diagnosis detail, proxy credentials); provider keys stay masked unless you pass `show_key=true`; config backups are `chmod 600`
+The repository keeps those fixes in `catalog.json` and `fixes/*.md`, with one
+stdlib-only engine behind the CLI and MCP server.
 
 ## Quick Start
 
@@ -107,201 +40,121 @@ command. This skill makes that repair one command: `fix apply npm-postinstall-sk
 git clone https://github.com/qingzhuo-cn/agent-fix.git
 cd agent-fix
 
-# 1) CLI — no install needed
-./scripts/fix doctor
-
-# 2) install the skill into your agents (Claude Code / OpenCode / Hermes / Codex hook)
-./install/install.sh            # POSIX or Git Bash
-powershell -File install\install.ps1   # Windows PowerShell
-
-# 3) try it
-fix list
+./scripts/fix list
+./scripts/fix check npm-postinstall-skipped --agent opencode
+./scripts/fix apply npm-postinstall-skipped --agent opencode --yes
 ```
 
-Windows users: full check coverage requires Git Bash (the CLI auto-detects it and
-falls back to cmd.exe for npm/node/registry checks).
-
-## Usage
-
-### CLI commands
-
-| Command | What it does | Exit code |
-|---------|--------------|-----------|
-| `fix list` | list every known issue | 0 |
-| `fix agents` | list the agents installed on this machine | 0 |
-| `fix check` | run all diagnostics (incl. per-agent binary checks) | 0 healthy / 1 broken |
-| `fix check <id>...` | run diagnostics for specific issues | 0 / 1 |
-| `fix doctor` | alias for `fix check` | 0 / 1 |
-| `fix apply <id> [--yes]` | apply fixes for one issue, then verify | 0 verified |
-| `fix auto` | check all → auto-apply fixes for broken ones (watchdog) | 0 all fixed |
-| `fix info <id>` | print the matching doc from `fixes/` | 0 |
-| `fix --json` / `fix check --json` | machine-readable output for programs | — |
-
-Typical session:
+Install the skill for one named agent:
 
 ```bash
-$ fix doctor
-== npm-postinstall-skipped: npm postinstall skipped -> native binary missing
-    [FAIL] opencode binary runs
-          Error: postinstall script was not run
-   -> BROKEN. Fix with: fix apply npm-postinstall-skipped --yes
-
-$ fix apply npm-postinstall-skipped --yes
-    [FIX ] Re-run opencode postinstall        → ok (12.4s)
-    [FIX ] Re-run claude-code install script  → ok (1.1s)
-    [VERIFY OK] opencode --version            → v1.18.10
-    [VERIFY OK] claude --version              → 2.1.220 (Claude Code)
-=> verified OK
+python scripts/fix.py install --agent opencode
+python scripts/fix.py mcp register opencode   # optional, explicit registration
 ```
 
-### Compatibility matrix
+Installation does not register startup repair hooks, scan other agents, or bulk
+register MCP servers.
 
-| Agent | Skill format | Install path | Auto-loaded? |
-|-------|-------------|--------------|--------------|
-| Hermes | `SKILL.md` | `~/.local/share/hermes/skills/agent-fix/` (Win: `%LOCALAPPDATA%\hermes\skills\agent-fix\`) | ✅ |
-| Claude Code | `SKILL.md` | `~/.claude/skills/agent-fix/` | ✅ |
-| Codex CLI | `SKILL.md` + `AGENTS.md` | `~/.codex/skills/agent-fix/` | ✅ |
-| OpenCode | `SKILL.md` + `AGENTS.md` | `~/.config/opencode/skills/agent-fix/` | ✅ |
-| Kimi Code | `SKILL.md` (auto-discovered) | `~/.kimi-code/skills/agent-fix/` | ✅ |
-| Pi | `SKILL.md` | `~/.pi/agent/skills/agent-fix/` | ✅ |
-| ZCode & shared | `SKILL.md` | `~/.agents/skills/agent-fix/` | ✅ |
-| Cursor, others | `AGENTS.md` | repo root | ✅ |
-| Any npm CLI | `fix` CLI | `~/bin/fix` | n/a |
+## CLI
 
-> All 13 registry agents (incl. Gemini CLI, Aider, Qwen Code, Amp, Droid) are
-> detected and health-checked by `fix doctor` even when the skill itself isn't
-> installed — see [fixes/agent-matrix.md](fixes/agent-matrix.md).
+| Command | Purpose |
+|---|---|
+| `fix list` | List known issue ids |
+| `fix agents` | Explicit inventory of detected agents; does not diagnose or repair |
+| `fix check <issue> --agent <id>` | Diagnose one issue for one agent |
+| `fix apply <issue> --agent <id> [--yes]` | Repair and verify that same agent |
+| `fix info <issue>` | Print the matching knowledge-base document |
+| `fix net <host> [--timeout N]` | Check one explicitly named endpoint |
+| `fix mcp register\|remove <agent-id>` | Change MCP registration for one agent |
+| `fix install\|uninstall --agent <id>` | Deploy or remove files for one agent |
 
-### Issue catalog
+There is no `doctor`, `auto`, or `selfheal` command. Automatic bulk diagnosis and
+startup repair were removed intentionally.
 
-| ID | Problem | Affected agents | Doc |
-|----|---------|-----------------|-----|
-| `agent-broken-generic` | ANY detected agent's binary fails (dynamic check, registry-driven) | all | [doc](fixes/agent-matrix.md) |
-| `npm-postinstall-skipped` | npm `ignore-scripts`/`--ignore-scripts` skips postinstall → native binary missing | claude-code, opencode, codex, pi, any npm CLI | [doc](fixes/npm-postinstall.md) |
-| `gui-path-blind` | GUI apps (CC-Switch, ZCode Desktop etc.) can't see agent binaries (registry PATH) | all agents, CC-Switch | [doc](fixes/gui-path.md) |
-| `node-version-too-old` | Node too old for the agent's engines → startup crash | claude-code, codex, opencode, pi | [doc](fixes/node-version.md) |
-| `npm-registry-mirror` | npm install/upgrade slow or unreachable | all npm agents | [doc](fixes/npm-registry.md) |
-| `agent-auth-broken` | "Not logged in" / expired OAuth / missing key | claude-code, codex, kimi-code, pi | [doc](fixes/agent-auth.md) |
-| `provider-config` | no provider configured — set key/base URL/model for ANY provider (DeepSeek/OpenAI/Anthropic/Google/Ollama/...) | all | [doc](fixes/provider-config.md) |
-| `net-connectivity` | agent API endpoints unreachable (TCP/DNS/proxy layer under all agents) | all (network layer) | [doc](fixes/net-connectivity.md) |
-| `opencode-mcp-schema` | `opencode.json` MCP entry invalid (`type: stdio` / string `command` / missing `enabled`) → `ConfigInvalidError` | opencode | [doc](fixes/opencode-mcp-schema.md) |
-| `deepseek-harness-broken` | DeepSeek Harness (`dsh`) won't boot — binary missing / Node too old / incomplete plugin bundles | dsh | [doc](fixes/deepseek-harness.md) |
+## Issue Catalog
 
-Per-agent deep dives: [Kimi Code](fixes/kimi-code.md) · [Pi](fixes/pi.md) · [ZCode](fixes/zcode.md)
+| ID | Problem |
+|---|---|
+| `agent-broken-generic` | The selected agent binary fails |
+| `npm-postinstall-skipped` | npm lifecycle script was skipped |
+| `gui-path-blind` | A GUI process cannot find the selected agent binary |
+| `node-version-too-old` | Node is too old for the selected agent |
+| `npm-registry-mirror` | npm registry is slow or unreachable |
+| `agent-auth-broken` | Login or API credential is missing/expired |
+| `provider-config` | Provider key, base URL, or model is not configured |
+| `net-connectivity` | The selected agent's API endpoint is unreachable |
+| `opencode-mcp-schema` | OpenCode MCP configuration has an invalid schema |
+| `deepseek-harness-broken` | `dsh` is missing or cannot boot |
 
-### Use it from your programs
+See [fixes/README.md](fixes/README.md) for the complete documentation index.
+
+## Python API
 
 ```python
-import sys
-sys.path.insert(0, "/path/to/agent-fix-skill/scripts")
-from fix import load_catalog, check_issue, apply_issue, auto_fix
+from agentfix import catalog, engine
 
-catalog = load_catalog()
-issue = next(i for i in catalog["issues"] if i["id"] == "npm-postinstall-skipped")
+cat = catalog.load_catalog()
+issue = catalog.find_issue(cat, "npm-postinstall-skipped")
+target = engine.resolve_target(cat, issue, "opencode")
 
-state = check_issue(issue, quiet=True)          # diagnose
-print("broken" if state["broken"] else "healthy")
-
-outcome = apply_issue(issue, yes=True, quiet=True)  # repair + verify
-print("verified:", outcome["verified"])
+state = engine.check_issue(issue, agent=target, quiet=True)
+outcome = engine.apply_issue(issue, agent=target, yes=True, quiet=True)
 ```
 
-Or call it as a subprocess with `--json`:
+`resolve_target` probes only the requested registry entry. An unknown, unsupported,
+or undetected target raises `TargetError`; an empty target is never reported as
+healthy or verified.
 
-```python
-import json, subprocess
-out = subprocess.run(["fix", "check", "--json"], capture_output=True, text=True)
-report = json.loads(out.stdout)
-```
+## MCP Server
 
-### MCP server (14 tools for any agent)
+The stdio MCP server exposes 12 tools:
 
-The same toolbox is exposed as an MCP server, so **any MCP-capable agent**
-(Claude Code, OpenCode, Cursor, ZCode, Codex) can call it as native tools.
-Fourteen generic verb tools, one review gate (type coercion, veto, error
-wrapping), one shared secret mask:
+`check`, `apply`, `info`, `agents`, `versions`, `net`, `logs`, `audit`, `backup`,
+`restore`, `provider`, and `hooks`.
 
-| Tool | Purpose |
-|------|---------|
-| `doctor` / `check` / `apply` / `info` | diagnose everything / one issue / repair one issue (`confirm=true` to execute) / read the doc |
-| `agents` / `versions` | what's installed / installed vs latest (GUI apps never probed) |
-| `net` / `logs` | endpoint connectivity + proxy / recent ERROR lines |
-| `audit` / `backup` / `restore` | config parse errors + leaked keys / snapshot / restore (`confirm=true`) |
-| `provider` | per-agent snippets for ANY provider (keys masked) |
-| `hooks` / `self_heal` | startup-hook management / the self-heal pipeline (`apply=true` to fix) |
-
-The catalog's issue ids are the arguments of `check`/`apply`/`info`, so new
-issues need no new tool code. Mutating tools are **dry-run by default**.
-`python mcp/smoke_test.py` regresses every tool over the wire.
+Except for the explicit `agents` inventory, each operational tool requires one
+`agent_id` or `host`. `check` and `apply` require both `issue_id` and `agent_id`.
+`apply` and `restore` remain dry-run by default. The `provider` tool is also
+read-only by default; `apply=true` writes Claude Code settings only, while other
+targets receive manual configuration steps. `hooks` can only inspect or remove
+a legacy hook for one named agent; new hook installation is disabled.
 
 ```bash
-python scripts/fix.py mcp register       # register with every installed agent
-claude mcp list | grep agent-fix         # verify: ✔ Connected
+python scripts/fix.py mcp register claude-code
+python mcp/smoke_test.py
 ```
 
-Then just talk to your agent: *"run doctor and tell me what's broken"*,
-*"net — is DeepSeek reachable?"*, *"backup before I upgrade"*,
-*"provider with provider=deepseek and key sk-…"*. Full docs: [mcp/README.md](mcp/README.md).
+See [mcp/README.md](mcp/README.md).
 
-## How it works
+## Supported Agents
 
+The registry currently includes Claude Code, Codex, OpenCode, Hermes, Kimi Code,
+Pi, ZCode, Cursor, Gemini CLI, Aider, Qwen Code, Amp, and Droid. The registry is
+data, not an instruction to inspect everything on the machine. It resolves only
+the explicit target supplied by the user.
+
+## Safety Properties
+
+- Repair and verification remain scoped to the same target.
+- Network checks use one requested host or the selected agent's catalog step.
+- Version, logs, audit, backup, restore, and provider tools require a target.
+- Startup self-heal and periodic watchdog installation are disabled.
+- Outputs mask API keys, tokens, and proxy credentials.
+- Restores reject unsafe archive paths and only write into the selected agent's
+  recognized config directory.
+- Windows command execution avoids bare `bash` so WSL does not intercept Git Bash
+  repair commands.
+
+## Development
+
+```bash
+python -m py_compile agentfix/*.py scripts/fix.py mcp/server.py mcp/smoke_test.py tests/*.py
+python -m unittest discover -s tests -v
+python mcp/smoke_test.py
 ```
-                ┌─────────────────────────────┐
-                │       catalog.json          │  single source of truth
-                │  agents · checks · fixes    │  (registry + issue definitions)
-                └──────────────┬──────────────┘
-                               │
-        ┌──────────────────────┬───────────────────────┬───────────────────┬──────────────┐
-        ▼                      ▼                       ▼                   ▼
-  fixes/*.md            agentfix/ + scripts/fix.py   SKILL.md / AGENTS.md    mcp/server.py
-  human & agent         CLI + Python API             agent-side loaders      MCP server — 14 tools
-  knowledge base        (stdlib only)                (Hermes/Claude/OpenCode) registry → gate → engine
-```
 
-Each issue in `catalog.json` is data — `checks` (diagnostics), `fixes` (repair
-commands, with optional platform gating), and `verify` (post-fix confirmation). The
-CLI is a thin engine over that data, so adding an issue never requires code changes.
-The same content is mirrored in `fixes/*.md` for humans and agents that prefer prose.
-
-## Extending the catalog
-
-1. Append an issue block to `catalog.json` (`id`, `checks`, `fixes`, `verify`, `doc`).
-2. Add a matching `fixes/<id>.md` doc.
-3. Validate: `fix check <id>`; test the repair with `fix apply <id> --yes`.
-4. Open a PR.
-
-## FAQ
-
-**Q: Why does OpenCode keep breaking after every upgrade?**
-A: The npm install/upgrade skipped its `postinstall` script (see
-[npm-postinstall.md](fixes/npm-postinstall.md)). Fix it once with
-`fix apply npm-postinstall-skipped --yes`, then set up the watchdog:
-`0 9 * * * cd /path/to/agent-fix-skill && ./scripts/fix auto >> fix.log 2>&1`.
-
-**Q: CC-Switch says "installed · cannot run" but the terminal works.**
-A: GUI apps don't inherit your shell PATH — they read the Windows registry PATH. Run
-`fix apply gui-path-blind --yes`, then restart the GUI app. See
-[gui-path.md](fixes/gui-path.md).
-
-**Q: Can I use this with DeepSeek models?**
-A: Yes — `deepseek-provider` shows exactly how to point Claude Code
-(`ANTHROPIC_BASE_URL=https://api.deepseek.com/anthropic`), Codex/OpenCode
-(`OPENAI_BASE_URL=https://api.deepseek.com`), and Hermes at the DeepSeek API. See
-[deepseek-provider.md](fixes/deepseek-provider.md).
-
-**Q: Does it need admin rights?**
-A: No. Everything is user-level (config files, user PATH, per-user npm global).
-
-**Q: Dependencies?**
-A: None. `scripts/fix.py` is pure Python 3.8+ stdlib. Bash wrapper needs `bash`
-(POSIX or Git Bash on Windows).
-
-## Related
-
-- [CC-Switch](https://github.com/farion1231/cc-switch) — the Claude/Codex/OpenCode
-  provider switcher whose detection logic motivated the `gui-path-blind` doc
-- [nvm-windows](https://github.com/coreybutler/nvm-windows) / [fnm](https://fnm.vercel.app) —
-  recommended Node version managers
+The regression suite constructs multiple fake agents and asserts that targeted
+check, fix, and verify operations never execute commands for another agent.
 
 ## License
 

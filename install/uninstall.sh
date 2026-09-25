@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# uninstall.sh — thin bootstrap for `fix uninstall` (the exact inverse of install).
+# uninstall.sh — thin bootstrap for one explicit `fix uninstall --agent <id>`.
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -16,4 +16,4 @@ if [ -z "$PY" ]; then
   exit 2
 fi
 
-exec "$PY" "$REPO/scripts/fix.py" uninstall
+exec "$PY" "$REPO/scripts/fix.py" uninstall "$@"

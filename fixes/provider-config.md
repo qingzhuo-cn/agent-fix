@@ -24,8 +24,8 @@ three values for the provider you want, in the place that agent reads.
 ## Check
 
 ```bash
-fix check provider-config        # per detected agent: key env + config home
-# MCP: the `provider` tool generates the snippets for every installed agent
+fix check provider-config --agent <id>   # key env or config home for one target
+# MCP: the `provider` tool generates snippets for the same explicit target
 ```
 
 ## The provider table
@@ -36,7 +36,8 @@ fix check provider-config        # per detected agent: key env + config home
 | OpenAI | `https://api.openai.com/v1` | `gpt-4o` | `OPENAI_API_KEY` |
 | Anthropic | `https://api.anthropic.com` | `claude-sonnet-4-5` | `ANTHROPIC_API_KEY` |
 | Google Gemini | `https://generativelanguage.googleapis.com/v1beta/openai` | `gemini-2.5-pro` | `GEMINI_API_KEY` |
-| Moonshot (Kimi) | `https://api.moonshot.cn/v1` | `moonshot-v1-8k` | `MOONSHOT_API_KEY` / `KIMI_API_KEY` |
+| Moonshot/Kimi Code | `https://api.moonshot.ai/v1` (managed Kimi service may use its configured endpoint) | `kimi-code/k3` or configured model | managed login / explicit `api_key_env` |
+| MiniMax | provider-specific | provider-specific | `MCODE_PROVIDER_API_KEY` or managed login |
 | Zhipu (GLM) | `https://open.bigmodel.cn/api/paas/v4` | `glm-4.6` | `ZHIPU_API_KEY` |
 | Alibaba (Qwen) | `https://dashscope.aliyuncs.com/compatible-mode/v1` | `qwen-max` | `DASHSCOPE_API_KEY` |
 | OpenRouter | `https://openrouter.ai/api/v1` | `openai/gpt-4o` | `OPENROUTER_API_KEY` |
@@ -54,14 +55,19 @@ where the agent reads it.
 | Codex CLI | env / config.toml | `OPENAI_BASE_URL`, `OPENAI_API_KEY` (or `model_provider` block in `~/.codex/config.toml`) |
 | OpenCode | env / opencode.json | `OPENAI_BASE_URL`, `OPENAI_API_KEY`, or `provider.<name>` block |
 | Hermes | provider config | `hermes config set provider <name>`, `hermes config set model <m>`; key in provider config/.env |
-| Kimi Code | config.toml | `[provider.<name>] base_url/api_key` + `[model.<m>] provider` in `~/.kimi-code/config.toml` |
+| Kimi Code | `config.toml` | managed login or `[providers.<name>]` / `[models.<alias>]` in `$KIMI_CODE_HOME/config.toml` |
+| MiniMax Code | `config.yaml` / provider commands | `mcode login`, `mcode provider set-minimax-key`, or documented custom provider |
 | Pi | env | `OPENAI_API_KEY`/`ANTHROPIC_API_KEY` + base URL (pi-ai supports OpenAI/Anthropic/Google) |
 | ZCode | app settings | OpenAI-compatible custom provider: base URL + key + model (GLM-based) |
 | Gemini CLI | env | `GEMINI_API_KEY` |
 | Aider | env | `OPENAI_API_KEY` (+ `--openai-api-base`) |
 | Qwen Code | env | `DASHSCOPE_API_KEY` |
 
-Generic examples (works for most OpenAI-compatible agents):
+Kimi Code uses `[providers.<name>]` and `[models.<alias>]`, not the older
+`[provider.*]`/`[model.*]` spelling. The provider table requires `type` and the
+model table requires a provider reference; set `api_key_env` or use managed login
+instead of pasting a key into the config or a transcript.
+
 
 ```bash
 # any OpenAI-compatible provider (DeepSeek, Moonshot, Zhipu, Qwen, Ollama, OpenRouter, custom):
@@ -72,8 +78,9 @@ export ANTHROPIC_BASE_URL="https://<provider-anthropic-base-url>"
 export ANTHROPIC_AUTH_TOKEN="sk-..."
 ```
 
-MCP users: the `provider` tool generates these snippets for every installed
-agent for any provider (and can write Claude's settings with `apply=true`).
+MCP users: the `provider` tool generates snippets for one explicit target.
+With `apply=true`, it writes Claude Code settings; other targets receive
+manual/config-file steps and are not modified.
 DeepSeek-specific details: [deepseek-provider.md](deepseek-provider.md).
 
 ## Verify
@@ -81,14 +88,14 @@ DeepSeek-specific details: [deepseek-provider.md](deepseek-provider.md).
 Always verify with a **real model round-trip**, not `--version`:
 
 ```bash
-fix check provider-config        # key + config present
-claude "ping" --print 2>&1 | head -5       # replace with your agent's non-interactive mode
+fix check provider-config --agent claude-code   # presence probe; inconclusive until round-trip
+claude "ping" --print 2>&1                    # replace with the target's real call
 ```
 
 ## Prevention
 
 - Keep one canonical key per provider in your shell profile / agent config; never
-  paste keys into chat or commit them (run the `audit` MCP tool / `config_audit` before pushing).
+  paste keys into chat or commit them (run the `audit` MCP tool before pushing).
 - After any provider switch, verify with one real prompt — `--version` cannot see
   auth problems.
 - If prompts fail with 401, check [agent-auth.md](agent-auth.md); if they fail with

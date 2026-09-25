@@ -1,50 +1,35 @@
 #!/usr/bin/env python3
-"""agent-fix MCP regression harness.
-
-Spawns mcp/server.py over stdio, runs the MCP handshake, and exercises EVERY
-registered tool through the wire protocol — asserting each returns a well-formed
-result. Zero dependencies, no MCP client needed.
-
-Usage:
-    python mcp/smoke_test.py            # full pass (incl. slow network tools)
-    python mcp/smoke_test.py --quick    # skip slow tools (doctor/net/versions/self_heal)
-
-Exit code 0 = all passed, 1 = any failure. CI-friendly.
-"""
+"""agent-fix MCP regression harness for explicit-target tools."""
 
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SERVER = Path(__file__).resolve().parent / "server.py"
 
-# tool -> (args, expect_isError)
-# Safe invocations only: mutating tools are called in dry-run/list/error mode.
-FAST_CALLS: dict = {
+CALLS: dict = {
     "agents": ({}, False),
-    "check": ({"issue_id": "node-version-too-old"}, False),
-    "apply": ({"issue_id": "no-such-issue"}, False),  # unknown id -> text, no mutation
+    "check": ({"issue_id": "node-version-too-old", "agent_id": "__not_installed__"}, True),
+    "apply": ({"issue_id": "node-version-too-old", "agent_id": "__not_installed__"}, True),
     "info": ({"issue_id": "provider-config"}, False),
-    "logs": ({"lines": 5}, False),
-    "audit": ({"depth": 1}, False),
-    "backup": ({}, False),
-    "restore": ({}, False),  # list mode, no confirm
-    "provider": ({"provider": "ollama"}, False),  # local provider, no key needed
-    "hooks": ({"action": "status"}, False),
-}
-SLOW_CALLS: dict = {
-    "doctor": ({}, False),
-    "net": ({"timeout": 3}, False),
-    "versions": ({}, False),
-    "self_heal": ({"apply": False}, False),  # diagnose-only, no mutation
+    "versions": ({"agent_id": "__not_installed__"}, True),
+    "net": ({"host": "bad host", "timeout": 0.1}, True),
+    "logs": ({"agent_id": "__not_installed__", "lines": 5}, True),
+    "audit": ({"agent_id": "__not_installed__", "depth": 1}, True),
+    "backup": ({"agent_id": "__not_installed__"}, True),
+    "restore": ({}, False),
+    "provider": ({"provider": "ollama", "agent_id": "__not_installed__"}, True),
+    "hooks": ({"action": "status", "agent_id": "zcode"}, False),
 }
 
 
-def run_mcp(messages: list, timeout: int = 120) -> list:
+def run_mcp(messages: list, timeout: int = 120, env: dict = None) -> list:
     proc = subprocess.run(
         [sys.executable, str(SERVER)],
         input="\n".join(json.dumps(m) for m in messages) + "\n",
@@ -52,91 +37,79 @@ def run_mcp(messages: list, timeout: int = 120) -> list:
         text=True,
         timeout=timeout,
         cwd=str(ROOT),
+        env=env,
     )
     if proc.returncode != 0:
         raise RuntimeError(f"server exited {proc.returncode}: {proc.stderr[:500]}")
     return [json.loads(line) for line in proc.stdout.splitlines() if line.strip()]
 
 
-def exercise(calls: dict, timeout: int = 120) -> int:
-    """Run one batch of tools through the gate; returns number of failures."""
-    failed = 0
-    msgs = []
-    for i, (name, (args, _)) in enumerate(calls.items(), start=10):
-        msgs.append(
-            {"jsonrpc": "2.0", "id": i, "method": "tools/call", "params": {"name": name, "arguments": args}}
-        )
-    results = {r["id"]: r for r in run_mcp(msgs, timeout=timeout)}
-
-    for i, (name, (args, expect_err)) in enumerate(calls.items(), start=10):
-        r = results.get(i)
-        if r is None or "result" not in r:
-            print(f"FAIL: {name}: no result ({r})")
-            failed += 1
-            continue
-        res = r["result"]
-        is_err = bool(res.get("isError"))
-        text = (res.get("content") or [{}])[0].get("text", "")
-        if is_err != expect_err:
-            print(f"FAIL: {name}: isError={is_err} (expected {expect_err}) :: {text[:200]}")
-            failed += 1
-        elif not text.strip():
-            print(f"FAIL: {name}: empty output")
-            failed += 1
-        else:
-            print(f"  ok  {name}")
-    return failed
+def handshake() -> list:
+    return [
+        {"jsonrpc": "2.0", "id": 0, "method": "initialize", "params": {"protocolVersion": "2024-11-05"}},
+        {"jsonrpc": "2.0", "method": "notifications/initialized"},
+    ]
 
 
 def main() -> int:
-    quick = "--quick" in sys.argv
-
-    # 1) handshake + tool list; a notification must NOT be answered
-    resp = run_mcp(
-        [
+    with tempfile.TemporaryDirectory(prefix="agent-fix-mcp-smoke-") as td:
+        home = Path(td)
+        bin_dir = home / "bin"
+        bin_dir.mkdir()
+        env = os.environ.copy()
+        env.update({
+            "HOME": str(home),
+            "USERPROFILE": str(home),
+            "KIMI_CODE_HOME": "",
+            "MINIMAX_DATA_DIR": "",
+            "MAVIS_DATA_DIR": "",
+            "XDG_CONFIG_HOME": str(home / ".config"),
+            "APPDATA": str(home / "AppData" / "Roaming"),
+            "LOCALAPPDATA": str(home / "AppData" / "Local"),
+            "PATH": str(bin_dir),
+        })
+        resp = run_mcp([
             {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2024-11-05"}},
             {"jsonrpc": "2.0", "method": "notifications/initialized"},
-            {"jsonrpc": "2.0", "method": "notifications/cancelled", "params": {"requestId": 1}},
             {"jsonrpc": "2.0", "id": 2, "method": "tools/list"},
+        ], env=env)
+        assert resp[0]["result"]["serverInfo"]["name"] == "agent-fix", resp[0]
+        assert len(resp) == 2, f"notification got a response: {resp}"
+        tools = {t["name"]: t for t in resp[1]["result"]["tools"]}
+        assert set(tools) == set(CALLS), f"tool registry drift: {set(tools) ^ set(CALLS)}"
+        assert "agent_id" in tools["check"]["inputSchema"]["properties"]
+        assert "agent_id" in tools["apply"]["inputSchema"]["properties"]
+        print(f"handshake OK - {len(tools)} explicit-target tools registered")
+
+        messages = [
+            {"jsonrpc": "2.0", "id": i, "method": "tools/call", "params": {"name": name, "arguments": args}}
+            for i, (name, (args, _)) in enumerate(CALLS.items(), start=10)
         ]
-    )
-    assert resp[0]["result"]["serverInfo"]["name"] == "agent-fix", resp[0]
-    assert len(resp) == 2, f"notification got a response (must stay silent): {resp}"
-    tools = {t["name"] for t in resp[1]["result"]["tools"]}
-    expected = set(FAST_CALLS) | set(SLOW_CALLS)
-    missing = expected - tools
-    if missing:
-        print(f"FAIL: tools/list missing {sorted(missing)}")
-        return 1
-    print(f"handshake OK — {len(tools)} tools registered (expected {len(expected)})")
+        results = {r["id"]: r for r in run_mcp(handshake() + messages, env=env)}
+        failed = 0
+        for i, (name, (_, expected_error)) in enumerate(CALLS.items(), start=10):
+            response = results.get(i, {})
+            result = response.get("result", {})
+            actual_error = bool(result.get("isError"))
+            text = (result.get("content") or [{}])[0].get("text", "")
+            if "result" not in response or actual_error != expected_error or not text.strip():
+                print(f"FAIL: {name}: isError={actual_error} expected={expected_error} :: {text[:200]}")
+                failed += 1
+            else:
+                print(f"  ok  {name}")
 
-    # 2) every tool through the gate (fast batch first)
-    failed = exercise(FAST_CALLS, timeout=120)
-
-    # 3) slow / network tools (skipped with --quick)
-    if not quick:
-        print("-- slow tools --")
-        failed += exercise(SLOW_CALLS, timeout=420)
-    else:
-        print("-- skipped slow tools (--quick) --")
-
-    # 4) the gate must veto garbage + unknown tools + bad arg types
-    bad = run_mcp(
-        [
-            {"jsonrpc": "2.0", "id": 90, "method": "tools/call", "params": {"name": "no_such_tool", "arguments": {}}},
-            {"jsonrpc": "2.0", "id": 91, "method": "tools/call", "params": {"name": "audit", "arguments": {"depth": "abc"}}},
-            {"jsonrpc": "2.0", "id": 92, "method": "tools/call", "params": {"name": "self_heal", "arguments": {"apply": "maybe"}}},
-        ]
-    )
-    for r in bad:
-        assert r["result"]["isError"] is True, f"gate did not veto: {r}"
-    print("  ok  gate vetoes unknown tool + bad arg types")
-
-    if failed:
-        print(f"\n{failed} tool(s) FAILED")
-        return 1
-    print("\nALL TOOLS PASS")
-    return 0
+        rejected_responses = run_mcp(handshake() + [
+            {"jsonrpc": "2.0", "id": 90, "method": "tools/call", "params": {"name": "doctor", "arguments": {}}},
+            {"jsonrpc": "2.0", "id": 91, "method": "tools/call", "params": {"name": "self_heal", "arguments": {}}},
+        ], env=env)
+        rejected = [r for r in rejected_responses if r.get("id") in {90, 91}]
+        assert all(r.get("error", {}).get("code") == -32602 for r in rejected), rejected
+        print("  ok  removed bulk tools are protocol-rejected")
+        if failed:
+            print(f"\n{failed} tool(s) FAILED")
+            return 1
+        print("\nALL TARGETED TOOLS PASS")
+        return 0
 
 
 if __name__ == "__main__":

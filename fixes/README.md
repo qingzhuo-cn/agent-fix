@@ -1,39 +1,37 @@
 # Fix Catalog
 
-This directory is the **human/agent-readable knowledge base** behind the `agent-fix` skill.
-Each file documents one problem class: symptoms, root cause, diagnosis commands, and the exact fix.
+This directory is the human/agent-readable knowledge base behind `agent-fix`.
+Each issue documents symptoms, root cause, targeted checks, the fix, and
+verification.
 
-Every doc is plain Markdown with a stable `id` so any agent (Claude Code, Codex, OpenCode,
-Hermes, Cursor, …) can read it directly. The same content is mirrored in
-[`../catalog.json`](../catalog.json) in machine-readable form, which drives the
-[`fix` CLI](../scripts/fix.py).
+| ID | Problem | Doc |
+|---|---|---|
+| `agent-broken-generic` | The selected agent binary fails | [agent-matrix.md](agent-matrix.md) |
+| `npm-postinstall-skipped` | npm lifecycle script skipped (Claude Code, Codex, OpenCode, Pi, Kimi Code, MiniMax Code, npm CLIs) | [npm-postinstall.md](npm-postinstall.md) |
+| `gui-path-blind` | GUI cannot find the selected agent binary | [gui-path.md](gui-path.md) |
+| `node-version-too-old` | Node is too old for the selected agent | [node-version.md](node-version.md) |
+| `npm-registry-mirror` | npm registry is slow or unreachable | [npm-registry.md](npm-registry.md) |
+| `agent-auth-broken` | Login or credential is missing/expired | [agent-auth.md](agent-auth.md) |
+| `provider-config` | Provider key/base URL/model is missing | [provider-config.md](provider-config.md) |
+| `net-connectivity` | The selected agent endpoint is unreachable | [net-connectivity.md](net-connectivity.md) |
+| `opencode-mcp-schema` | OpenCode MCP schema is invalid | [opencode-mcp-schema.md](opencode-mcp-schema.md) |
+| `deepseek-harness-broken` | DeepSeek Harness (`dsh`) cannot boot | [deepseek-harness.md](deepseek-harness.md) |
 
-| ID | Problem | Affected agents | Doc |
-|----|---------|-----------------|-----|
-| `npm-postinstall-skipped` | npm `ignore-scripts` / `--ignore-scripts` skips postinstall → native binary missing | claude-code, opencode, codex, any npm CLI | [npm-postinstall.md](npm-postinstall.md) |
-| `agent-broken-generic` | any installed agent binary fails (postinstall / native binary / missing) — **dynamic, checks every detected agent** | all (registry-driven) | [agent-matrix.md](agent-matrix.md) |
-| `gui-path-blind` | GUI apps (CC-Switch, ZCode Desktop, launchers) can't find agent binaries that only exist in shell PATH | all agents, CC-Switch | [gui-path.md](gui-path.md) |
-| `node-version-too-old` | Node too old for the agent's engine requirement → CLI crashes at startup | claude-code, codex, opencode, pi | [node-version.md](node-version.md) |
-| `npm-registry-mirror` | npm install/upgrade slow or fails (network / mirror issues) | all npm-installed agents | [npm-registry.md](npm-registry.md) |
-| `agent-auth-broken` | "Not logged in" / expired OAuth / missing API key | claude-code, codex, kimi-code, pi | [agent-auth.md](agent-auth.md) |
-| `provider-config` | No provider configured — set key/base URL/model for ANY provider | all agents | [provider-config.md](provider-config.md) |
-| `net-connectivity` | Agent API endpoints unreachable (TCP/DNS/proxy layer under ALL agents) | all (network layer) | [net-connectivity.md](net-connectivity.md) |
-| `opencode-mcp-schema` | `opencode.json` MCP entry uses invalid schema (`type: stdio` / string `command` / missing `enabled`) → `ConfigInvalidError` on every opencode run incl. history | opencode | [opencode-mcp-schema.md](opencode-mcp-schema.md) |
+## Per-agent references
 
-## Per-agent deep dives
+- [Kimi Code](kimi-code.md)
+- [MiniMax Code](minimax-code.md)
+- [Pi](pi.md)
+- [ZCode](zcode.md)
+- [Registry matrix](agent-matrix.md)
 
-| Agent | Doc |
-|-------|-----|
-| Claude Code / Codex / OpenCode / Hermes | covered across the catalog |
-| Kimi Code (`kimi`) | [kimi-code.md](kimi-code.md) |
-| Pi (`@earendil-works/pi-coding-agent`) | [pi.md](pi.md) |
-| ZCode (`zcode`) | [zcode.md](zcode.md) |
-| Full agent matrix (all registry agents, install paths, skills dirs) | [agent-matrix.md](agent-matrix.md) |
+## Usage
 
-## How to use
+Run only the checks and fixes for the target named by the user:
 
-- **Humans:** open the doc for your symptom and follow it.
-- **Agents:** when a user reports a broken agent, read the matching doc, run the
-  `Check` commands, apply the `Fix`, then run `Verify`.
-- **Programs:** call `scripts/fix.py check|apply` (or import it) — it reads the same
-  catalog. See [`../scripts/README.md`](../scripts/README.md).
+```bash
+fix check <issue-id> --agent <agent-id>
+fix apply <issue-id> --agent <agent-id> --yes
+```
+
+Do not use another installed agent or model as collateral verification.

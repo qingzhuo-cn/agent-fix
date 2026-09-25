@@ -106,19 +106,26 @@ hermes config set model deepseek-chat
 ### Kimi Code
 
 ```toml
-# ~/.kimi-code/config.toml
-[provider.deepseek]
+# $KIMI_CODE_HOME/config.toml (default ~/.kimi-code/config.toml)
+[providers.deepseek]
+type = "openai"
 base_url = "https://api.deepseek.com"
-api_key = "sk-<your-deepseek-key>"
+api_key_env = "DEEPSEEK_API_KEY"
 
-[model.deepseek-chat]
+[models."deepseek-chat"]
 provider = "deepseek"
+model = "deepseek-chat"
+# add max_context_size from the provider's current documentation
 ```
 
 ```bash
-export KIMI_API_KEY="sk-<your-deepseek-key>"
+export DEEPSEEK_API_KEY="<your key>"
 kimi -m deepseek-chat "hello"
 ```
+
+Kimi Code does not automatically promote a bare `KIMI_API_KEY` shell export into
+every provider; use the explicit `api_key_env` (or Kimi's managed login) and keep
+the real key out of chat/transcripts.
 
 ### Pi (pi-coding-agent)
 
@@ -142,9 +149,9 @@ Model:    deepseek-chat / deepseek-reasoner
 
 ```bash
 # real model round-trip (not just --version)
-claude "say hi" --print 2>&1 | head -5
-codex exec "say hi" 2>&1 | head -5
-opencode run "say hi" 2>&1 | head -5
+claude "say hi" --print 2>&1
+codex exec "say hi" 2>&1
+opencode run "say hi" 2>&1
 ```
 
 ## Prevention

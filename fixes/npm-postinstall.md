@@ -1,9 +1,9 @@
 # npm postinstall skipped → native binary missing
 
 - **ID:** `npm-postinstall-skipped`
-- **Affects:** `opencode-ai`, `@anthropic-ai/claude-code`, and any npm-distributed CLI
-  that downloads a native binary during `postinstall` / `install`.
-- **Tags:** `claude-code`, `opencode`, `codex`, `npm`
+- **Affects:** npm-distributed agents including Claude Code, OpenCode, Kimi Code,
+  MiniMax Code, and other CLIs whose package uses a lifecycle script.
+- **Tags:** `claude-code`, `opencode`, `codex`, `kimi-code`, `minimax-code`, `npm`
 
 ## Symptom
 
@@ -77,10 +77,11 @@ claude --version     # prints e.g. 2.1.220 (Claude Code), exit 0
 - Keep `ignore-scripts=false` (the npm default). Only flip it to `true` if you
   deliberately audit every package; then expect to re-run postinstalls manually.
 - Never pass `--ignore-scripts` when installing/upgrading agent CLIs.
-- If you must keep scripts disabled globally, install a watchdog: run
-  `fix check npm-postinstall-skipped` (or a wrapper script) after every upgrade and
-  auto-apply on failure. The `fix` CLI exits non-zero when broken, so it drops
-  straight into cron / CI / a wrapper.
+- If you must keep scripts disabled globally, run
+  `fix check npm-postinstall-skipped --agent <id>` after every upgrade and apply
+  only that target on failure. The CLI exits non-zero when broken, so an external
+  CI or wrapper may automate the explicit check; agent-fix does not install a
+  startup watchdog.
 
 ## History (real-world case)
 

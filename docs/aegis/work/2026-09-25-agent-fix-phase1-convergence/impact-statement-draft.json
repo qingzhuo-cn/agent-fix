@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "affectedLayers": [
+    "CLI and launcher adapters",
+    "catalog and provider behavior",
+    "user documentation and tests"
+  ],
+  "owners": [
+    "agentfix existing owners"
+  ],
+  "invariants": [
+    "All repair and verification remain scoped to one explicit target"
+  ],
+  "compatBoundary": "Preserve all issue ids, 12 MCP tools, launcher paths, hook cleanup, and persistent user state",
+  "nonGoals": [
+    "No persistent user-state mutation, new compatibility owner, MCP profile, or Phase 2 retirement"
+  ]
+}

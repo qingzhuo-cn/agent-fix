@@ -26,11 +26,11 @@
 
 ```bash
 # Claude Code
-claude doctor 2>&1 | head -40          # built-in diagnostic: auth, versions, PATH
+claude doctor 2>&1                         # built-in diagnostic: auth, versions, PATH
 ls -la ~/.claude/.credentials.json 2>/dev/null || echo "no credentials file"
 
 # Codex
-codex login status 2>&1 | head -5 || true
+codex login status 2>&1
 ls -la ~/.codex/auth.json 2>/dev/null || echo "no codex auth file"
 
 # Env-var based auth (what most provider switchers set)
@@ -58,8 +58,8 @@ the agent's own login — see [deepseek-provider.md](deepseek-provider.md).
 ## Verify
 
 ```bash
-claude "ping" --print 2>&1 | head -5    # a real model response, not an auth error
-codex exec "ping" 2>&1 | head -5
+claude "ping" --print 2>&1                   # a real model response, not an auth error
+codex exec "ping" 2>&1
 ```
 
 ## Prevention

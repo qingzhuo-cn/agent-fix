@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "requestedOutcome": "Resolve approved Phase 1 redundancy without breaking public compatibility or touching persistent user state",
+  "goal": "Repair launcher and documentation contracts, collapse duplicate npm lifecycle ownership, clarify provider behavior, and add regression evidence",
+  "successEvidence": [
+    "Approved spec acceptance criteria pass through unit, CLI, launcher, catalog, documentation, and isolated MCP checks"
+  ],
+  "stopCondition": "done only when all approved criteria pass; stop for scope change, persistent-state need, or public-contract retirement",
+  "nonGoals": [
+    "No persistent user-state mutation, new compatibility owner, MCP profile, or Phase 2 retirement"
+  ],
+  "scope": "Launcher argument forwarding; no-op JSON removal; npm lifecycle owner clarification; provider behavior text; executable documentation; focused tests",
+  "changeKinds": [
+    "refactor"
+  ],
+  "riskHints": [
+    "Pre-existing dirty workspace overlaps task paths; public commands and docs must remain synchronized"
+  ]
+}

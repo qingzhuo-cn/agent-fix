@@ -7,77 +7,104 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, windows-2022, macos-15-intel]
+        python: ["3.8", "3.11"]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
-          python-version: "3.11"
-      - name: Validate catalog.json
-        run: python -c "import json; c=json.load(open('catalog.json')); assert len(c.get('agents',{}))>=10; print('catalog.json OK,', len(c['agents']), 'agents,', len(c['issues']), 'issues')"
+          python-version: ${{ matrix.python }}
+      - name: Validate catalog ownership
+        shell: python
+        run: |
+          import json
+          from pathlib import Path
+          catalog = json.loads(Path("catalog.json").read_text(encoding="utf-8"))
+          agents = set(catalog["agents"])
+          assert len(agents) >= 15, len(agents)
+          for issue in catalog["issues"]:
+              targets = issue.get("agents", [])
+              assert targets, issue["id"]
+              for target in targets:
+                  assert target == "all" or target in agents, (issue["id"], target)
+              expanded = agents if "all" in targets else set(targets)
+              for target in expanded:
+                  applicable = []
+                  for step in issue.get("checks", []):
+                      step_agents = step.get("agents", [])
+                      if not step_agents or "all" in step_agents or target in step_agents:
+                          applicable.append(step)
+                  assert applicable, (issue["id"], target, "has no scoped diagnostic step")
+              if issue.get("doc"):
+                  assert (Path("fixes") / Path(issue["doc"]).name).is_file(), issue["doc"]
+          print(f"catalog.json OK: {len(agents)} agents, {len(catalog['issues'])} issues")
+      - name: Validate persistence ownership
+        shell: python
+        run: |
+          from pathlib import Path
+          engine_source = Path("agentfix/engine.py").read_text(encoding="utf-8")
+          state_source = Path("agentfix/state.py").read_text(encoding="utf-8")
+          hooks_source = Path("agentfix/hooks.py").read_text(encoding="utf-8")
+          result_source = Path("agentfix/result.py").read_text(encoding="utf-8")
+          assert "zipfile" not in engine_source, "engine must not own archive persistence"
+          assert state_source.count("def create_zip_atomic") == 1
+          assert state_source.count("def atomic_write_text") == 1
+          assert "zipfile" not in hooks_source, "hooks must delegate persistence to state.py"
+          assert "not mcp-capable" not in result_source, "adapter status must not infer from human text"
+          assert "class StatusText" in result_source
+          print("persistence/status owner OK")
       - name: Compile the package
-        run: python -m py_compile scripts/fix.py mcp/server.py agentfix/*.py
-      - name: fix list
-        run: python scripts/fix.py list
-      - name: fix agents (registry smoke)
-        run: python scripts/fix.py agents
-      - name: network engine smoke (does not gate on reachability)
+        shell: python
         run: |
-          python scripts/fix.py net --timeout 3 > /tmp/net.txt || true
-          grep -q "NETWORK DIAGNOSTIC" /tmp/net.txt
-          grep -q "deepseek" /tmp/net.txt
-          echo "network engine OK"
-      - name: MCP server handshake + tools smoke test
+          from pathlib import Path
+          import py_compile
+          files = [Path("scripts/fix.py"), Path("mcp/server.py"), Path("mcp/smoke_test.py")]
+          files += list(Path("agentfix").glob("*.py")) + list(Path("tests").glob("*.py"))
+          for path in files:
+              py_compile.compile(str(path), doraise=True)
+      - name: Unit tests
+        env:
+          TMPDIR: ${{ runner.temp }}
+        run: python -m unittest discover -s tests -v
+      - name: CLI surface
+        shell: python
         run: |
-          python - <<'EOF'
+          import subprocess
+          import sys
+          assert subprocess.run([sys.executable, "scripts/fix.py", "list"], check=True).returncode == 0
+          assert subprocess.run([sys.executable, "scripts/fix.py", "agents"], check=True).returncode == 0
+          help_text = subprocess.check_output([sys.executable, "scripts/fix.py", "--help"], text=True)
+          assert "--agent" in help_text
+          failed = subprocess.run([sys.executable, "scripts/fix.py", "check", "node-version-too-old"], text=True, capture_output=True)
+          assert failed.returncode != 0
+          assert "--agent" in (failed.stdout + failed.stderr)
+      - name: MCP registry and notification discipline
+        shell: python
+        run: |
           import json, subprocess, sys
           reqs = [
-            {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05"}},
-            {"jsonrpc":"2.0","id":2,"method":"tools/list"},
-            {"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"agents","arguments":{}}},
-            {"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"net","arguments":{"timeout":2}}},
+              {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05"}},
+              {"jsonrpc":"2.0","method":"notifications/initialized"},
+              {"jsonrpc":"2.0","id":2,"method":"tools/list"},
           ]
-          p = subprocess.run([sys.executable, "mcp/server.py"], input="\n".join(json.dumps(r) for r in reqs),
-                             capture_output=True, text=True, timeout=120)
+          p = subprocess.run([sys.executable, "mcp/server.py"], input="\n".join(json.dumps(r) for r in reqs), capture_output=True, text=True, timeout=60)
           assert p.returncode == 0, p.stderr
-          replies = {json.loads(l)["id"]: json.loads(l) for l in p.stdout.splitlines() if l.strip()}
-          assert replies[1]["result"]["serverInfo"]["name"] == "agent-fix"
-          names = [t["name"] for t in replies[2]["result"]["tools"]]
-          assert len(names) >= 12, names
-          for tool in ("doctor", "check", "apply", "info", "agents", "net", "audit", "backup", "restore", "provider", "hooks", "self_heal"):
-              assert tool in names, f"missing tool: {tool}"
-          assert not replies[3]["result"].get("isError")
-          assert not replies[4]["result"].get("isError")
-          print(f"MCP OK — {len(names)} tools, handshake + agents + net")
-          EOF
-      - name: MCP notification discipline (no reply to notifications)
-        run: |
-          python - <<'EOF'
-          import json, subprocess, sys
-          reqs = [
-            {"jsonrpc":"2.0","method":"notifications/initialized"},
-            {"jsonrpc":"2.0","id":1,"method":"initialize","params":{}},
-          ]
-          p = subprocess.run([sys.executable, "mcp/server.py"], input="\n".join(json.dumps(r) for r in reqs),
-                             capture_output=True, text=True, timeout=60)
-          lines = [l for l in p.stdout.splitlines() if l.strip()]
-          assert len(lines) == 1, f"expected exactly one reply, got {len(lines)}"
-          assert json.loads(lines[0])["id"] == 1
-          print("notification discipline OK")
-          EOF
-      - name: fix check node-version-too-old (node 20+ preinstalled on runner)
-        run: python scripts/fix.py check node-version-too-old
-      - name: importable API smoke test
-        run: |
-          python - <<'EOF'
-          from agentfix import catalog, engine
-          cat = catalog.load_catalog()
-          print('issues:', len(cat['issues']))
-          assert len(cat['issues']) >= 7
-          assert len(cat.get('agents', {})) >= 10
-          print('detected agents here:', [a['id'] for a in catalog.detect_agents(cat)])
-          state = engine.check_issue(next(i for i in cat['issues'] if i['id'] == 'node-version-too-old'), quiet=True)
-          print('node-version check:', 'broken' if state['broken'] else 'healthy')
-          EOF
-      - name: MCP regression harness (fast tools)
-        run: python mcp/smoke_test.py --quick
+          replies = [json.loads(line) for line in p.stdout.splitlines() if line.strip()]
+          assert len(replies) == 2, replies
+          assert replies[0]["result"]["serverInfo"]["name"] == "agent-fix"
+          tools = {tool["name"]: tool for tool in replies[1]["result"]["tools"]}
+          expected = {"check", "apply", "info", "agents", "versions", "net", "logs", "audit", "backup", "restore", "provider", "hooks"}
+          assert set(tools) == expected, set(tools) ^ expected
+          assert tools["check"]["inputSchema"]["additionalProperties"] is False
+          assert "agent_id" in tools["check"]["inputSchema"]["properties"]
+          assert "agent_id" in tools["apply"]["inputSchema"]["properties"]
+          print("MCP registry OK: 12 targeted tools")
+      - name: MCP targeted regression harness
+        env:
+          TMPDIR: ${{ runner.temp }}
+        run: python mcp/smoke_test.py

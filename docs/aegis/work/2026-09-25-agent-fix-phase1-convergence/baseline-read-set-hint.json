@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "candidateDocs": [
+    "AGENTS.md",
+    "docs/aegis/specs/2026-09-25-agent-fix-phase1-convergence-brief.md",
+    "docs/aegis/plans/2026-09-25-agent-fix-phase1-convergence.md"
+  ],
+  "whyRelevant": "These refs define explicit-target safety, approved scope, compatibility, retirement, and verification boundaries",
+  "missingAuthority": []
+}

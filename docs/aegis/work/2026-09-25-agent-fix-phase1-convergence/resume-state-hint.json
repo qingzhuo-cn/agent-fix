@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "taskId": "2026-09-25-agent-fix-phase1-convergence",
+  "lastCheckpointRef": "docs/aegis/work/2026-09-25-agent-fix-phase1-convergence/todo-checkpoint-draft.json",
+  "resumeInstruction": "If reopened, first read the spec, final evidence bundle, reflection, and current dirty workspace; do not rerun destructive operations without fresh scoped authorization",
+  "knownPartialWork": [
+    "Phase 1 convergence implemented, reviewed, repaired, and verified"
+  ],
+  "mustReadBeforeContinuing": [
+    "docs/aegis/work/2026-09-25-agent-fix-phase1-convergence/10-intent.md",
+    "docs/aegis/work/2026-09-25-agent-fix-phase1-convergence/20-checkpoint.md",
+    "docs/aegis/work/2026-09-25-agent-fix-phase1-convergence/todo-checkpoint-draft.json"
+  ],
+  "unsafeToAssume": [
+    "Do not infer real install/uninstall/check/apply behavior on every OS from help-only evidence"
+  ]
+}

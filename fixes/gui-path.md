@@ -30,10 +30,10 @@ are invisible to GUI tools unless explicitly added to the registry PATH.
 
 ```bash
 # What a GUI process sees (registry PATH, exactly as Explorer would launch it):
-cmd //c "echo %PATH%" | tr ';' '\n' | grep -iE "npm|hermes|claude|codex|opencode" || echo "NOT in GUI PATH"
+cmd //c "echo %PATH%"                         # inspect registry PATH; no pipe masks exit
 
 # What your shell sees:
-echo "$PATH" | tr ':' '\n' | grep -iE "npm|hermes" || true
+printf '%s\n' "$PATH"
 
 # Reproduce the GUI probe exactly (CreateNoWindow + registry PATH + redirected output):
 powershell -NoProfile -Command '

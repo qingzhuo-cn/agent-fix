@@ -23,9 +23,12 @@ community `zcode-cli` terminal client).
 
 1. **`zcode: command not found`** — CLI not on PATH.
    - Fix: add the ZCode CLI dir to PATH (see [gui-path.md](gui-path.md)).
-2. **Desktop shows "installed · cannot run"** — GUI PATH issue; the app can't see
-   your npm/agent dirs.
-   - Fix: `fix apply gui-path-blind --yes`, then restart ZCode Desktop.
+2. **Desktop shows "installed · cannot run"** — the GUI process cannot see the
+   ZCode CLI directory.
+   - Fix: add that directory to the Windows user PATH, restart ZCode Desktop,
+     and verify with the manual registry-PATH procedure in
+     [gui-path.md](gui-path.md). The automated `gui-path-blind` issue does not
+     list ZCode as a target.
 3. **Skill/plugin not loading** — skills must be at
    `~/.agents/skills/<name>/SKILL.md`; plugins follow the `.zcode-plugin` layout
    (`plugin.json`, `commands/*.md`, `.mcp.json`).
@@ -54,6 +57,5 @@ export OPENAI_API_KEY="sk-<your-deepseek-key>"
 ## Verification
 
 ```bash
-zcode --version 2>&1 | head -2                    # binary OK
-fix check agent-broken-generic                    # included in doctor
+fix check agent-broken-generic --agent zcode     # explicit target only; GUI is not launched
 ```
