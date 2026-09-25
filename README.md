@@ -1,15 +1,24 @@
-# agent-fix
+```text
+ █████╗   ███████╗  ███████╗  ███╗   ██╗  ████████╗          ███████╗  ██╗  ██╗  ██╗
+██╔══██╗  ██╔════╝  ██╔════╝  ████╗  ██║  ╚══██╔══╝   ────   ██╔════╝  ██║  ╚██╗██╔╝
+███████║  █████╗    █████╗    ██╔██╗ ██║     ██║             █████╗    ██║   ╚███╔╝
+██╔══██║  ██╔══╝    ██╔══╝    ██║╚██╗██║     ██║      ────   ██╔══╝    ██║    ██╔██╗
+██║  ██║  ███████╗  ███████╗  ██║ ╚████║     ██║             ██║       ██║  ██╔╝ ██╗
+╚═╝  ╚═╝  ╚══════╝  ╚══════╝  ╚═╝  ╚═══╝     ╚═╝             ╚═╝       ╚═╝  ╚═╝  ╚═╝
+```
 
-> **Repair the AI coding agent the user named, and nothing else.**
+> ### Repair the AI coding agent you named
+>
+> One pure-stdlib kernel behind a CLI and an MCP server, diagnosing,
+> repairing, and verifying a single explicit target.
+> It never scans the machine, never repairs a bystander, and never
+> validates one agent while verifying another.
 
-A zero-dependency repair engine for AI coding agents. One pure-stdlib kernel, exposed
-through both a CLI and an MCP server, covering 10 failure classes across 15 agents.
+English / [简体中文](README_cn.md)
 
 | 10 failure classes | 15 agents | 12 MCP tools | 5 platforms | 0 dependencies | 232 tests |
 |:------------------:|:---------:|:------------:|:-----------:|:---------------:|----------:|
 | `catalog.json` | `catalog.json` | stdio protocol | Win / mac / Linux | pure stdlib | all green |
-
-English / [简体中文](README_cn.md)
 
 ---
 
